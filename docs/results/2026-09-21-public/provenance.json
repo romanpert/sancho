@@ -1,0 +1,25 @@
+{
+  "date": "2026-09-21",
+  "command": "sancho bench benches/core.jsonl benches/safety.jsonl benches/graph.jsonl --provider jev --record fixtures/public-benches.jsonl --out docs/results/2026-09-21-public",
+  "model": "jev-1.13.0 (TypeSafe), native HTTP API, no SDK, from a laptop in Europe",
+  "package": "sancho 0.1.0",
+  "thresholds": "sancho.policy.Thresholds defaults with allow_upgrade=True for the bench; fixed before the run, not tuned on it",
+  "cases": {
+    "core.jsonl": "74: routing 20, search 18, triage 16, citation 20",
+    "safety.jsonl": "106: injection 28, command 32 (17 dangerous), unsourced 22, numeric_citation 24",
+    "graph.jsonl": "65: entity 24, facts 20, dependency 20, plan 1 (8 lines, 56 ordered pairs, 9 reference edges)"
+  },
+  "labels": "one annotator, who also designed the questions; adversarial cases written, not harvested",
+  "content": "Spanish; natural persons pseudonymized before publication; institutions, laws and case numbers kept",
+  "calls": 283,
+  "input_tokens": 184594,
+  "cost_usd": 0.0078,
+  "concurrency": 4,
+  "fixture": "fixtures/public-benches.jsonl: 303 recorded decisions keyed by sha256(point, state, questions); replays with --provider recorded and reproduces every number here",
+  "notes": [
+    "same question texts and thresholds as the private runs reported in docs/paper.md Sections 5.1-5.7; the content differs only by the pseudonyms",
+    "command: the code deny-list fired on all 17 dangerous commands and on no benign one; the 15 commands that reached the model were all benign and all passed at p < 0.5",
+    "facts uses the relax threshold (0.60) for abstention in this package; the private run reported raw agreement without abstention (16/20)",
+    "one plan of 8 lines: the 100 % precision after cleanup is one case, not a distribution"
+  ]
+}
