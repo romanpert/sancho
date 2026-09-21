@@ -90,6 +90,28 @@ Wrap it in the SDK's `@input_guardrail` and return `GuardrailFunctionOutput(resu
 result["tripwire_triggered"])`. Argument rewriting has no guardrail equivalent; call
 `Guardian.before_tool` from a tool wrapper if the harness lets you replace arguments.
 
+## LangChain, LangGraph and deepagents (middleware)
+
+```python
+from sancho.harness.langchain import ToolSelectMiddleware
+
+agent = create_agent(model, tools, middleware=[ToolSelectMiddleware(squire, always={"web_search"})])
+```
+
+`ToolSelectMiddleware` narrows `request.tools` on every model call. Tools are grouped by
+`group_of` (default: the tool's `metadata["server"]`, else the prefix before the first `_`),
+the squire asks one question per group ("would work on the last human message need this
+group?") and the call goes on with the groups that pass, plus `always`. A group is dropped
+only when its probability is low (`Thresholds.tools`, 0.35): the costly error here is
+hiding a tool the agent needed, not paying for one it did not use. The selection is never
+empty; with no human message, a single group, unnamed tools or a silent decider the request
+passes untouched.
+
+Tested in shape against a request-like object with `tools`, `messages` and `override(...)`,
+which is what LangChain 1.x `ModelRequest` exposes; not yet against a live agent loop, and
+not yet measured on a public bench. Requires `pip install sancho[langchain]` for the real
+`AgentMiddleware` base; without LangChain the class still imports and runs for tests.
+
 ## Cursor, Copilot, Hermes Agent and others
 
 Three routes, in order of effort:
@@ -99,7 +121,7 @@ Three routes, in order of effort:
    `sancho hook` and map field names. Claude Code's protocol is the default; a different one
    is a ten-line wrapper around `sancho.harness.claude_code.handle`.
 3. **Middleware**: call `Guardian.before_tool` / `after_tool` from the harness's own tool
-   middleware (LangChain `AgentMiddleware`, a custom loop). The `Verdict` is three fields.
+   middleware (a custom loop; for LangChain see the section above). The `Verdict` is three fields.
 
 Contributions of tested adapters are welcome; put them in `sancho/harness/<name>.py` with a
 docstring that says what is tested and what is not.

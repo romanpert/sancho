@@ -19,7 +19,7 @@ Three guarantees that are not negotiable:
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -27,7 +27,7 @@ from .budget import Meter
 from .contract import Decider, DeciderUnavailable, Decision, Question, State
 from .dag import Edge, build_dag, waves
 from .journal import Journal, NullJournal, decision_event
-from .points import citation, entities, guard, plan, review, routing, search, triage
+from .points import citation, entities, guard, plan, review, routing, search, tools, triage
 from .policy import Thresholds
 from .providers.null import NullDecider
 from .text import is_repeat, quote_present
@@ -163,6 +163,44 @@ class Squire:
         return [
             {**dict(r), "source_kind": tr.source_kind, "evidence": tr.evidence} for tr, r in kept
         ]
+
+    async def select_tools(
+        self,
+        *,
+        purpose: str,
+        catalog: Sequence[Mapping[str, Any]],
+        clues: str = "",
+        always: Iterable[str] = (),
+    ) -> tools.Selection:
+        """Which groups of a tool catalog the model's call should carry. Never empty.
+
+        Large catalogs are asked in chunks, in parallel, and merged before the policy runs
+        once over the whole catalog. `always` groups are pinned by code, not by the model.
+        """
+        groups = [dict(g) for g in catalog]
+        if not groups:
+            return tools.Selection((), (), "empty catalog", {})
+        chunks = [
+            groups[i : i + tools.GROUPS_PER_CALL]
+            for i in range(0, len(groups), tools.GROUPS_PER_CALL)
+        ]
+        decisions = await asyncio.gather(
+            *(
+                self.decide("tools", *tools.questions(purpose=purpose, catalog=c, clues=clues))
+                for c in chunks
+            )
+        )
+        probs: dict[str, float | None] = {}
+        for d, c in zip(decisions, chunks, strict=True):
+            probs.update(tools.probabilities_of(d, c))
+        selection = tools.select(
+            probs, self._t, always=always, failed=all(d.failed for d in decisions)
+        )
+        for d in decisions:
+            self.record(
+                d, kept=len(selection.keep), dropped=len(selection.dropped), reason=selection.reason
+            )
+        return selection
 
     async def verify_citation(
         self, *, claim: str, quote: str, source: str

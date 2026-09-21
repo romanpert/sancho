@@ -43,6 +43,7 @@ class Thresholds:
     entity_low: float = 0.25  # below: different entity
     entity_high: float = 0.75  # above: same entity; in between: not sure
     classify: float = 0.60  # probability needed to accept a closed-vocabulary label
+    tools: float = 0.35  # below this, a tool group leaves the model's call (in doubt, keep)
     saturated: float = 0.70  # probability that a research line is exhausted
     max_decisions: int = 400  # per job
     max_usd: float = 0.10  # per job

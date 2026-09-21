@@ -40,6 +40,7 @@ one annotator except the 298 register entries with independent labels. Read the 
 | Same real-world entity | 24/24 | | `align_entities` tool |
 | Plan dependency (pairwise) | 20/20; full 8-line DAG: precision 100 %, recall 88 % after code cleanup | | `evaluate_plan` tool |
 | Closed-vocabulary classification (10-13 classes) | 80-85 % | majority 43-62 %, keywords 73 % | `classify_field` tool |
+| Tool groups a request needs (catalog selection) | not yet measured | | `select_tools`, LangChain middleware |
 
 The result that matters is not accuracy. It is **separation by confidence**: 131 of 132
 decisions at confidence >= 0.75 were right; 11 of 24 below. Thirteen of the model's fourteen

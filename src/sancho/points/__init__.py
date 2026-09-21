@@ -16,7 +16,7 @@ Three rules from the measurements, applied in every point:
 - Include `other` / `none` when the option list may not be exhaustive.
 """
 
-from . import citation, entities, guard, injection, plan, review, routing, search, triage
+from . import citation, entities, guard, injection, plan, review, routing, search, tools, triage
 
 __all__ = [
     "citation",
@@ -27,5 +27,6 @@ __all__ = [
     "review",
     "routing",
     "search",
+    "tools",
     "triage",
 ]

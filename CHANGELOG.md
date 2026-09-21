@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Decision point `tools`: which groups of a tool catalog a request needs (one Truth per group,
+  chunked and merged; `Thresholds.tools`, in doubt keep; `always` pinned by code; never empty).
+  Motivated by harnesses that bind every schema on every step. Not yet measured on a public bench.
+- `Squire.select_tools`.
+- Harness adapter `sancho.harness.langchain.ToolSelectMiddleware` for LangChain / LangGraph /
+  deepagents `AgentMiddleware` (`wrap_model_call` and async), tested in shape.
+- Extra `langchain`.
+
 ## 0.1.0 (2026-09-21)
 
 First public release, extracted from the decision layer of a production research agent.
