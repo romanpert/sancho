@@ -6,13 +6,19 @@ import asyncio
 
 import pytest
 
-from sancho import Answer, Choice, Score, Truth, choice, labelled, score, truth
-from sancho.contract import DeciderUnavailable
-from sancho.providers import FallbackDecider, FixedDecider, LocalDecider, NullDecider, RoutedDecider
-from sancho.providers.fixed import BrokenDecider
-from sancho.providers.jev import from_wire, to_wire
-from sancho.providers.llm import answers_from, build_schema
-from sancho.providers.recorded import RecordedDecider, RecordingDecider, key_of
+from sanchopanza import Answer, Choice, Score, Truth, choice, labelled, score, truth
+from sanchopanza.contract import DeciderUnavailable
+from sanchopanza.providers import (
+    FallbackDecider,
+    FixedDecider,
+    LocalDecider,
+    NullDecider,
+    RoutedDecider,
+)
+from sanchopanza.providers.fixed import BrokenDecider
+from sanchopanza.providers.jev import from_wire, to_wire
+from sanchopanza.providers.llm import answers_from, build_schema
+from sanchopanza.providers.recorded import RecordedDecider, RecordingDecider, key_of
 
 
 def test_questions_translate_to_typesafe_wire_format():

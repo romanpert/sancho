@@ -6,13 +6,13 @@ import asyncio
 from dataclasses import dataclass, field, replace
 from typing import Any
 
-from sancho.harness.langchain import (
+from sanchopanza.harness.langchain import (
     ToolSelectMiddleware,
     catalog_of,
     default_group_of,
     last_human_text,
 )
-from sancho.providers import FixedDecider, NullDecider
+from sanchopanza.providers import FixedDecider, NullDecider
 
 from .helpers import squire, yes
 

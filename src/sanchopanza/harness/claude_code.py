@@ -1,12 +1,12 @@
-"""Command-line hook for Claude Code (`sancho hook`), and any harness with the same protocol.
+"""Command-line hook for Claude Code (`sanchopanza hook`), and any harness with the same protocol.
 
 Claude Code runs hooks as processes: JSON on stdin, JSON on stdout. In `settings.json`:
 
     {"hooks": {
       "PreToolUse": [{"matcher": "Agent|WebSearch|Bash",
-                      "hooks": [{"type": "command", "command": "sancho hook"}]}],
+                      "hooks": [{"type": "command", "command": "sanchopanza hook"}]}],
       "PostToolUse": [{"matcher": "Agent",
-                       "hooks": [{"type": "command", "command": "sancho hook"}]}]}}
+                       "hooks": [{"type": "command", "command": "sanchopanza hook"}]}]}}
 
 Configuration is by environment, because a hook process has nothing else:
 

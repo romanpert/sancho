@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from sancho import Answer, Decision, Thresholds, truth
-from sancho.journal import MemoryJournal
-from sancho.squire import Squire
+from sanchopanza import Answer, Decision, Thresholds, truth
+from sanchopanza.journal import MemoryJournal
+from sanchopanza.squire import Squire
 
 
 def decision(point: str, **answers: Answer) -> Decision:

@@ -33,7 +33,7 @@ jobs:
       - run: ruff format --check src tests
       - run: pytest -q
       - name: Replay the public benches from the recorded fixture
-        run: sancho bench benches/core.jsonl benches/safety.jsonl benches/graph.jsonl --provider recorded --fixture fixtures/public-benches.jsonl
+        run: sanchopanza bench benches/core.jsonl benches/safety.jsonl benches/graph.jsonl --provider recorded --fixture fixtures/public-benches.jsonl
 
       - run: python -m build
       - uses: actions/upload-artifact@v4
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/sancho-ai/
+      url: https://pypi.org/project/sanchopanza/
     permissions:
       id-token: write # required for OIDC trusted publishing
     steps:

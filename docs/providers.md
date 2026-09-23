@@ -12,7 +12,7 @@ and, depending on the kind, `choice` + `probabilities`, `score`, or `truth`. Rai
 `DeciderUnavailable` when you cannot answer; never invent answers. Leave a question out of
 `answers` when you cannot answer just that one; the policy uses its default for it.
 
-Confidence convention: for `Truth`, `confidence = |2p - 1|` (use `sancho.answers.truth`).
+Confidence convention: for `Truth`, `confidence = |2p - 1|` (use `sanchopanza.answers.truth`).
 For `Choice`, the provider's own confidence if it has one, else top minus runner-up
 (`answers.choice`). For `Score`, the provider's confidence or the modal mass (`answers.score`).
 
@@ -29,8 +29,8 @@ For `Choice`, the provider's own confidence if it has one, else top minus runner
 | | `RoutedDecider` | one provider per decision point | per point |
 | | `RecordingDecider` | wraps a real provider and writes a fixture | passthrough |
 
-`sancho.providers.create(name, **kwargs)` instantiates by name, including providers other
-packages register under the `sancho.providers` entry-point group.
+`sanchopanza.providers.create(name, **kwargs)` instantiates by name, including providers other
+packages register under the `sanchopanza.providers` entry-point group.
 
 ## Writing one
 
@@ -38,8 +38,8 @@ A provider for a hosted decision API is `jev.py` with another URL and mapping: a
 lines, most of them error handling. A provider for a local model is shorter:
 
 ```python
-from sancho import answers
-from sancho.providers import LocalDecider
+from sanchopanza import answers
+from sanchopanza.providers import LocalDecider
 
 def injection(state, question):
     p = clf.predict_proba([state["text"]])[0][1]

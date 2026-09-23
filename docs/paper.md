@@ -4,7 +4,7 @@
 Status: preliminary results on small benchmarks, mostly single-annotator. Written to be
 checked, not believed. Every number is recomputable: the private runs from the result files
 described in Appendix A, the public run from `benches/`, `fixtures/public-benches.jsonl` and
-`docs/results/2026-09-21-public/` in this repository, with `sancho.eval.stats`.
+`docs/results/2026-09-21-public/` in this repository, with `sanchopanza.eval.stats`.
 
 ---
 
@@ -441,7 +441,7 @@ the package were fixed before these runs and are **not** re-tuned on them.
 
 The released package, on the pseudonymized files, with the production thresholds and
 upgrades allowed. 283 calls, 184,594 input tokens, 0.0078 USD. Recorded to
-`fixtures/public-benches.jsonl`; `sancho bench ... --provider recorded` replays it exactly.
+`fixtures/public-benches.jsonl`; `sanchopanza bench ... --provider recorded` replays it exactly.
 
 | Point | n | Coverage | Agreement when deciding | Wilson | Private run |
 |---|---|---|---|---|---|
@@ -597,17 +597,17 @@ extended, by anyone.
 **Public run (this repository).**
 
 ```
-pip install sancho[dev]
-sancho bench benches/core.jsonl benches/safety.jsonl benches/graph.jsonl \
+pip install sanchopanza[dev]
+sanchopanza bench benches/core.jsonl benches/safety.jsonl benches/graph.jsonl \
     --provider recorded --fixture fixtures/public-benches.jsonl      # free, exact replay
-sancho bench benches/*.jsonl --provider jev --record fixtures/mine.jsonl --out results/today
+sanchopanza bench benches/*.jsonl --provider jev --record fixtures/mine.jsonl --out results/today
 ```
 
 Files: `benches/` (245 cases), `fixtures/public-benches.jsonl` (303 recorded decisions),
 `docs/results/2026-09-21-public/` (`results.json` one row per case with raw probability,
-`summary.md`, `summary.json`, `provenance.json`). Question texts: `src/sancho/points/*.py`,
-verbatim. Statistics: `src/sancho/eval/stats.py`. DAG: `src/sancho/dag.py`. Thresholds:
-`src/sancho/policy.py`, fixed before the run.
+`summary.md`, `summary.json`, `provenance.json`). Question texts: `src/sanchopanza/points/*.py`,
+verbatim. Statistics: `src/sanchopanza/eval/stats.py`. DAG: `src/sanchopanza/dag.py`. Thresholds:
+`src/sanchopanza/policy.py`, fixed before the run.
 
 **Private runs (E1-E6, G1-G4).** Performed in the originating harness on 2026-09-21 with the
 same question texts and thresholds; per-call results (670 + 418 rows), summaries and

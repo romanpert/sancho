@@ -13,8 +13,8 @@ from pathlib import Path
 
 import pytest
 
-from sancho.eval.bench import load_cases, run_bench, summarize
-from sancho.providers import RecordedDecider
+from sanchopanza.eval.bench import load_cases, run_bench, summarize
+from sanchopanza.providers import RecordedDecider
 
 ROOT = Path(__file__).resolve().parents[1]
 BENCHES = Path(os.environ.get("SANCHO_BENCHES_DIR", ROOT / "benches"))

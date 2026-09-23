@@ -1,10 +1,10 @@
 # Sancho as a Claude Code hook
 
-Claude Code runs hooks as processes: JSON on stdin, JSON on stdout. `sancho hook` reads a
+Claude Code runs hooks as processes: JSON on stdin, JSON on stdout. `sanchopanza hook` reads a
 `PreToolUse` or `PostToolUse` event and answers with the same `hookSpecificOutput` shape the
 Claude Agent SDK uses.
 
-1. `pip install sancho[jev]` in an environment Claude Code can see (`which sancho`).
+1. `pip install sanchopanza[jev]` in an environment Claude Code can see (`which sancho`).
 2. Put `settings.json` from this folder in `.claude/settings.json` (project) or merge it into
    `~/.claude/settings.json` (user).
 3. Export `TYPESAFE_API_KEY`. Without it the hook runs the `null` provider and changes nothing.

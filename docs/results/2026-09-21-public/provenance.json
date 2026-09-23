@@ -1,9 +1,9 @@
 {
   "date": "2026-09-21",
-  "command": "sancho bench benches/core.jsonl benches/safety.jsonl benches/graph.jsonl --provider jev --record fixtures/public-benches.jsonl --out docs/results/2026-09-21-public",
+  "command": "sanchopanza bench benches/core.jsonl benches/safety.jsonl benches/graph.jsonl --provider jev --record fixtures/public-benches.jsonl --out docs/results/2026-09-21-public",
   "model": "jev-1.13.0 (TypeSafe), native HTTP API, no SDK, from a laptop in Europe",
   "package": "sancho 0.1.0",
-  "thresholds": "sancho.policy.Thresholds defaults with allow_upgrade=True for the bench; fixed before the run, not tuned on it",
+  "thresholds": "sanchopanza.policy.Thresholds defaults with allow_upgrade=True for the bench; fixed before the run, not tuned on it",
   "cases": {
     "core.jsonl": "74: routing 20, search 18, triage 16, citation 20",
     "safety.jsonl": "106: injection 28, command 32 (17 dangerous), unsourced 22, numeric_citation 24",

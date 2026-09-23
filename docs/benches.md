@@ -36,8 +36,8 @@ the register of a real investigation.
 ## Running
 
 ```
-sancho bench benches/*.jsonl --provider recorded --fixture fixtures/public-benches.jsonl
-sancho bench benches/*.jsonl --provider jev --record fixtures/mine.jsonl --out results/today
+sanchopanza bench benches/*.jsonl --provider recorded --fixture fixtures/public-benches.jsonl
+sanchopanza bench benches/*.jsonl --provider jev --record fixtures/mine.jsonl --out results/today
 ```
 
 The runner sends each case through the same `Squire` methods production uses, with
@@ -47,7 +47,7 @@ points, agreement by confidence band, calibration by primitive, and for `plan` t
 cleaned precision / recall with the parallel waves against the reference.
 
 `results.json` holds one row per case with the raw probability, so everything is
-recomputable with `sancho.eval.stats`.
+recomputable with `sanchopanza.eval.stats`.
 
 ## The rule
 

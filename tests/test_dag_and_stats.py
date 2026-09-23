@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from sancho.dag import build_dag, transitive_closure, transitive_reduction, waves
-from sancho.eval import stats
+from sanchopanza.dag import build_dag, transitive_closure, transitive_reduction, waves
+from sanchopanza.eval import stats
 
 
 def test_the_dag_breaks_cycles_by_probability_and_removes_transitives():

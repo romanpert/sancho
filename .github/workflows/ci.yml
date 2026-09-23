@@ -23,4 +23,4 @@ jobs:
       - run: ruff check src tests
       - run: pytest -q
       - name: replay the public benches from the recorded fixture
-        run: sancho bench benches/core.jsonl benches/safety.jsonl benches/graph.jsonl --provider recorded --fixture fixtures/public-benches.jsonl
+        run: sanchopanza bench benches/core.jsonl benches/safety.jsonl benches/graph.jsonl --provider recorded --fixture fixtures/public-benches.jsonl

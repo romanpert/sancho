@@ -1,6 +1,6 @@
 """Sancho's deliberate decision points as an MCP server over stdio.
 
-    pip install sancho[jev,mcp]
+    pip install sanchopanza[jev,mcp]
     TYPESAFE_API_KEY=... python examples/mcp/server.py
 
 Claude Code:   claude mcp add sancho -- python examples/mcp/server.py
@@ -14,9 +14,9 @@ from __future__ import annotations
 
 import os
 
-from sancho import JsonlJournal, Squire
-from sancho.harness.mcp import build_server
-from sancho.providers import create
+from sanchopanza import JsonlJournal, Squire
+from sanchopanza.harness.mcp import build_server
+from sanchopanza.providers import create
 
 provider = "jev" if os.environ.get("TYPESAFE_API_KEY") else "null"
 squire = Squire(create(provider), journal=JsonlJournal(os.environ.get("SANCHO_JOURNAL", "journal.jsonl")))

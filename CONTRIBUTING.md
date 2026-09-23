@@ -4,12 +4,12 @@ Three kinds of contribution are worth the most, in this order.
 
 1. **Cases with labels.** A decision point with 50 cases and two annotators is worth more
    than a new feature. Format in `docs/benches.md`. Real material, hard negatives, no
-   identifiable private individuals. If you also run them (`sancho bench ... --record`),
+   identifiable private individuals. If you also run them (`sanchopanza bench ... --record`),
    send the fixture and the `summary.md`.
-2. **A provider.** One file in `src/sancho/providers/`, implementing `Decider`, with a
+2. **A provider.** One file in `src/sanchopanza/providers/`, implementing `Decider`, with a
    docstring that states how its confidence is computed and a test that exercises it with a
-   fake transport. Register it in `pyproject.toml` under `sancho.providers`.
-3. **A tested harness adapter.** One file in `src/sancho/harness/`, a translation of
+   fake transport. Register it in `pyproject.toml` under `sanchopanza.providers`.
+3. **A tested harness adapter.** One file in `src/sanchopanza/harness/`, a translation of
    `Guardian` verdicts to the harness's wire format, with tests on the shapes and a
    docstring that says what was run against the real harness and what was not.
 
@@ -29,5 +29,5 @@ Run locally:
 ```
 uv venv && uv pip install -e ".[dev]"
 ruff check src tests && ruff format --check src tests && pytest -q
-sancho bench benches/*.jsonl --provider recorded --fixture fixtures/public-benches.jsonl
+sanchopanza bench benches/*.jsonl --provider recorded --fixture fixtures/public-benches.jsonl
 ```

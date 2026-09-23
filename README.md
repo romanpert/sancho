@@ -17,13 +17,14 @@ It cannot self-confirm because it cannot write. It returns calibrated probabilit
 can abstain or fall back to a default when confidence is low.
 
 ```
-pip install sancho-ai[jev]       # TypeSafe Jev over HTTP
-pip install sancho-ai[mcp]       # expose the decision points as MCP tools
-pip install sancho-ai            # core only: recorded, null, local and LLM providers
+pip install sanchopanza[jev]       # TypeSafe Jev over HTTP
+pip install sanchopanza[mcp]       # expose the decision points as MCP tools
+pip install sanchopanza            # core only: recorded, null, local and LLM providers
 ```
 
-The distribution is `sancho-ai` because `sancho` was taken on PyPI by an unrelated 2014
-test framework. The import name is `sancho`, as everywhere in these docs.
+Distribution, import name and command are all `sanchopanza`. `sancho` is installed as a
+short alias for the command only; the bare name was taken on PyPI by an unrelated 2014
+test framework.
 
 ## What it does, measured
 
@@ -53,6 +54,21 @@ only when confident, otherwise keep the default) make the agent strictly no wors
 without the squire. Calibration differs by primitive: Truth answers are under-confident,
 Score answers are the least reliable. Details in the paper, Section 5.8.
 
+## What it costs
+
+A decision costs **28.7 millionths of a dollar**, output included, because this model's
+output is free. The 227 decisions of the public bench cost 0.0065 USD; the same input
+tokens priced as Claude Sonnet 5 input alone would be 48 times that, and as Opus 5 input
+alone, 119 times. Measured against Claude Haiku 4.5 with tool-forced output on the same
+cases: **49x cheaper, three times faster, comparable accuracy** (paper, Section 5.6).
+
+There is **no end-to-end saving percentage here, because that experiment has not been run.**
+What can be stated is the break-even, and it is low: at the measured 37 % drop rate, a
+fetched page pays for its own triage above **60 tokens** on a Sonnet-class orchestrator, and
+a delegated subtask pays for its own routing above **75 tokens**. Real pages and real
+subtasks are one to two orders of magnitude larger. The arithmetic, the measured inputs and
+the experiment that would license a headline number are in [docs/savings.md](docs/savings.md).
+
 ## Architecture
 
 ```mermaid
@@ -79,29 +95,29 @@ flowchart LR
     S --> E[(journal: one event per decision)]
 ```
 
-- **Contract** (`sancho.contract`): `Choice`, `Score`, `Truth` questions in; `Answer`s with
+- **Contract** (`sanchopanza.contract`): `Choice`, `Score`, `Truth` questions in; `Answer`s with
   probabilities and confidence out; a `Decider` protocol any provider implements.
-- **Points** (`sancho.points`): the questions of each decision point, verbatim as measured,
+- **Points** (`sanchopanza.points`): the questions of each decision point, verbatim as measured,
   and a pure policy function per point. Testable with a table.
-- **Squire** (`sancho.squire`): one decider, one `Thresholds`, one journal, one budget.
+- **Squire** (`sanchopanza.squire`): one decider, one `Thresholds`, one journal, one budget.
   Fail-open, capped, traced. High-level methods: `route_task`, `route_search`,
   `triage_page`, `verify_citation`, `evaluate_plan`, `review_report`, `guard_command`,
   `same_entity`, `relate_facts`, `classify`.
-- **Guardian** (`sancho.harness.generic`): tool call in, verdict out (allow / deny with
+- **Guardian** (`sanchopanza.harness.generic`): tool call in, verdict out (allow / deny with
   reason / rewrite arguments). Harness-agnostic.
-- **Adapters** (`sancho.harness`): Claude Agent SDK hooks, Claude Code command hook, MCP
+- **Adapters** (`sanchopanza.harness`): Claude Agent SDK hooks, Claude Code command hook, MCP
   server, OpenAI-Agents-style guardrail.
-- **Providers** (`sancho.providers`): `jev`, `recorded`, `null`, `llm`, `local`, plus
+- **Providers** (`sanchopanza.providers`): `jev`, `recorded`, `null`, `llm`, `local`, plus
   `FallbackDecider` and `RoutedDecider` to mix them.
-- **Eval** (`sancho.eval`): bench runner, Wilson / bootstrap / McNemar / AUC / Brier / ECE,
+- **Eval** (`sanchopanza.eval`): bench runner, Wilson / bootstrap / McNemar / AUC / Brier / ECE,
   calibration by primitive, all in plain Python.
 
 ## Five-minute start
 
 ```python
 import asyncio
-from sancho import Squire, Thresholds, JsonlJournal
-from sancho.providers import create
+from sanchopanza import Squire, Thresholds, JsonlJournal
+from sanchopanza.providers import create
 
 squire = Squire(
     create("jev"),                                  # reads TYPESAFE_API_KEY
@@ -135,8 +151,8 @@ The harness works the same either way; that is the point.
 
 ```python
 from claude_agent_sdk import ClaudeAgentOptions
-from sancho.harness import Guardian, HarnessConfig
-from sancho.harness.claude_agent_sdk import hook_matchers
+from sanchopanza.harness import Guardian, HarnessConfig
+from sanchopanza.harness.claude_agent_sdk import hook_matchers
 
 guardian = Guardian(squire, HarnessConfig(
     tiers={"light": "researcher-light", "default": "researcher", "deep": "researcher-deep"},
@@ -150,8 +166,8 @@ options = ClaudeAgentOptions(hooks=hook_matchers(guardian), ...)
 
 ```json
 {"hooks": {
-  "PreToolUse":  [{"matcher": "Agent|WebSearch|Bash", "hooks": [{"type": "command", "command": "sancho hook"}]}],
-  "PostToolUse": [{"matcher": "Agent", "hooks": [{"type": "command", "command": "sancho hook"}]}]
+  "PreToolUse":  [{"matcher": "Agent|WebSearch|Bash", "hooks": [{"type": "command", "command": "sanchopanza hook"}]}],
+  "PostToolUse": [{"matcher": "Agent", "hooks": [{"type": "command", "command": "sanchopanza hook"}]}]
 }}
 ```
 
@@ -161,11 +177,11 @@ See `examples/claude_code/`.
 **Any MCP client** (Claude Code, Cursor, Codex, Copilot, Hermes, your own):
 
 ```python
-from sancho.harness.mcp import build_server
+from sanchopanza.harness.mcp import build_server
 build_server(squire).run()   # tools: verify_citation, evaluate_plan, align_entities, classify_field, triage_text
 ```
 
-**OpenAI Agents SDK and Codex-style guardrails**: `sancho.harness.openai_agents.tool_guardrail`.
+**OpenAI Agents SDK and Codex-style guardrails**: `sanchopanza.harness.openai_agents.tool_guardrail`.
 **Anything else**: `Guardian.before_tool(ToolCall(name, args))` returns a `Verdict`; map it.
 
 ## Swap the model
@@ -173,8 +189,8 @@ build_server(squire).run()   # tools: verify_citation, evaluate_plan, align_enti
 The contract is five lines. A provider is one file.
 
 ```python
-from sancho.providers import LocalDecider, FallbackDecider
-from sancho import answers
+from sanchopanza.providers import LocalDecider, FallbackDecider
+from sanchopanza import answers
 
 local = LocalDecider({
     "injection": lambda state, q: answers.truth(my_classifier.predict_proba(state["text"])),
@@ -186,13 +202,13 @@ squire = Squire(FallbackDecider([local, create("jev")]))   # local answers what 
 hardware. `LLMDecider(anthropic_completer(...))` or `openai_completer(...)` forces any LLM
 into the same schema, with the caveat that its confidence is self-reported. Vision models
 plug in through `LocalDecider` with the image reference in the state. Third-party packages
-register providers under the `sancho.providers` entry-point group.
+register providers under the `sanchopanza.providers` entry-point group.
 
 ## Measure before you trust
 
 ```
-sancho bench benches/*.jsonl --provider recorded --fixture fixtures/public-benches.jsonl
-sancho bench benches/*.jsonl --provider jev --record fixtures/mine.jsonl --out results/today
+sanchopanza bench benches/*.jsonl --provider recorded --fixture fixtures/public-benches.jsonl
+sanchopanza bench benches/*.jsonl --provider jev --record fixtures/mine.jsonl --out results/today
 ```
 
 Prints agreement when deciding, coverage, Wilson intervals, latency, agreement by confidence
@@ -213,11 +229,12 @@ passes 50 cases per point with a second annotator, and the band table justifies 
 ## Repository
 
 ```
-src/sancho/            the package
+src/sanchopanza/            the package
 benches/               public benches (core 74, safety 106, graph 64 + one plan)
 fixtures/              recorded real decisions: tests and dry runs without a key
 docs/paper.md          the working paper, with every number recomputable from results
 docs/results/          the public run: results.json, summary.md, provenance.json
+docs/savings.md        what it costs, what it keeps out, and the break-even arithmetic
 docs/architecture.md   diagrams and the invariants
 docs/adapters.md       one page per harness
 docs/providers.md      how to write a provider
@@ -225,4 +242,5 @@ examples/              Claude Code, Claude Agent SDK, MCP, a local provider
 tests/                 no test calls a paid API
 ```
 
-MIT. Named after the squire who keeps his feet on the ground while the knight sees giants.
+Apache 2.0, which adds an express patent grant on top of a permissive licence. Named after
+the squire who keeps his feet on the ground while the knight sees giants.

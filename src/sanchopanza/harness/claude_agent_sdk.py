@@ -1,7 +1,7 @@
 """Hooks for the Claude Agent SDK (and Claude Code, which shares the protocol).
 
     from claude_agent_sdk import ClaudeAgentOptions, HookMatcher
-    from sancho.harness.claude_agent_sdk import pre_tool_use, post_tool_use
+    from sanchopanza.harness.claude_agent_sdk import pre_tool_use, post_tool_use
 
     options = ClaudeAgentOptions(hooks={
         "PreToolUse": [HookMatcher(matcher="Agent|WebSearch|Bash", hooks=[pre_tool_use(guardian)])],

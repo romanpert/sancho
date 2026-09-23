@@ -6,13 +6,15 @@
   chunked and merged; `Thresholds.tools`, in doubt keep; `always` pinned by code; never empty).
   Motivated by harnesses that bind every schema on every step. Not yet measured on a public bench.
 - `Squire.select_tools`.
-- Harness adapter `sancho.harness.langchain.ToolSelectMiddleware` for LangChain / LangGraph /
+- Harness adapter `sanchopanza.harness.langchain.ToolSelectMiddleware` for LangChain / LangGraph /
   deepagents `AgentMiddleware` (`wrap_model_call` and async), tested in shape.
 - Extra `langchain`.
 
 ## 0.1.0 (2026-09-21)
 
 First public release, extracted from the decision layer of a production research agent.
+Distributed as `sanchopanza` under Apache 2.0; `import sanchopanza`, command `sanchopanza`
+with `sancho` as a short alias.
 
 - Contract: Choice / Score / Truth questions, calibrated Answers, Decider protocol.
 - Ten decision points with measured question texts and pure policies: routing, search, triage (with injection), citation, plan lines and dependencies (with DAG cleanup), report review, shell guard, entity alignment, fact relation, closed-vocabulary classification (with other).

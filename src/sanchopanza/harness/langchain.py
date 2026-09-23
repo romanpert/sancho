@@ -1,6 +1,6 @@
 """Tool selection as a LangChain / LangGraph / deepagents `AgentMiddleware`.
 
-    from sancho.harness.langchain import ToolSelectMiddleware
+    from sanchopanza.harness.langchain import ToolSelectMiddleware
 
     middleware = [ToolSelectMiddleware(squire, always={"web_search"})]
     agent = create_agent(model, tools, middleware=middleware)

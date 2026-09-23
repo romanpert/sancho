@@ -13,9 +13,9 @@ import asyncio
 import os
 import re
 
-from sancho import Squire, answers
-from sancho.contract import Question, State
-from sancho.providers import FallbackDecider, LocalDecider, create
+from sanchopanza import Squire, answers
+from sanchopanza.contract import Question, State
+from sanchopanza.providers import FallbackDecider, LocalDecider, create
 
 TRIGGERS = re.compile(
     r"ignora las instrucciones|ignore (all )?previous instructions|if you are a language model|"

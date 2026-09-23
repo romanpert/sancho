@@ -1,1 +1,1 @@
-"""Tests for sancho. No test calls a paid provider."""
+"""Tests for sanchopanza. No test calls a paid provider."""

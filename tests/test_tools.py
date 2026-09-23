@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from sancho import Decision
-from sancho.points import tools
+from sanchopanza import Decision
+from sanchopanza.points import tools
 
 from .helpers import decision, thresholds, yes
 

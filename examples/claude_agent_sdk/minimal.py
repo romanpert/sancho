@@ -11,15 +11,15 @@ from __future__ import annotations
 import asyncio
 import os
 
-from sancho import JsonlJournal, Squire, Thresholds
-from sancho.harness import Guardian, HarnessConfig
-from sancho.providers import create
+from sanchopanza import JsonlJournal, Squire, Thresholds
+from sanchopanza.harness import Guardian, HarnessConfig
+from sanchopanza.providers import create
 
 
 async def main() -> None:
     from claude_agent_sdk import ClaudeAgentOptions, query
 
-    from sancho.harness.claude_agent_sdk import hook_matchers
+    from sanchopanza.harness.claude_agent_sdk import hook_matchers
 
     provider = "jev" if os.environ.get("TYPESAFE_API_KEY") else "null"
     squire = Squire(

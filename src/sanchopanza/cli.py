@@ -1,10 +1,10 @@
 """`sancho` command line.
 
-sancho bench benches/*.jsonl --provider recorded --fixture fixtures/public-benches.jsonl
-sancho bench benches/*.jsonl --provider jev --record fixtures/new.jsonl --out results/today
-sancho hook            # Claude Code hook: JSON in, JSON out
-sancho providers       # what is installed
-sancho dag plan.json   # clean DAG and waves from {"nodes": [...], "edges": {"A->B": 0.9}}
+sanchopanza bench benches/*.jsonl --provider recorded --fixture fixtures/public-benches.jsonl
+sanchopanza bench benches/*.jsonl --provider jev --record fixtures/new.jsonl --out results/today
+sanchopanza hook            # Claude Code hook: JSON in, JSON out
+sanchopanza providers       # what is installed
+sanchopanza dag plan.json   # clean DAG and waves from {"nodes": [...], "edges": {"A->B": 0.9}}
 """
 
 from __future__ import annotations

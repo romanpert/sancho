@@ -6,10 +6,10 @@ import asyncio
 
 import pytest
 
-from sancho import Answer, Decision
-from sancho.providers import FixedDecider
-from sancho.providers.fixed import BrokenDecider
-from sancho.text import is_repeat, quote_present
+from sanchopanza import Answer, Decision
+from sanchopanza.providers import FixedDecider
+from sanchopanza.providers.fixed import BrokenDecider
+from sanchopanza.text import is_repeat, quote_present
 
 from .helpers import choice, score, squire, yes
 

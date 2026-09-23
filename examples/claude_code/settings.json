@@ -3,13 +3,13 @@
     "PreToolUse": [
       {
         "matcher": "Agent|Task|WebSearch|Bash",
-        "hooks": [{ "type": "command", "command": "sancho hook", "timeout": 10 }]
+        "hooks": [{ "type": "command", "command": "sanchopanza hook", "timeout": 10 }]
       }
     ],
     "PostToolUse": [
       {
         "matcher": "Agent|Task",
-        "hooks": [{ "type": "command", "command": "sancho hook", "timeout": 10 }]
+        "hooks": [{ "type": "command", "command": "sanchopanza hook", "timeout": 10 }]
       }
     ]
   }

@@ -1,7 +1,7 @@
 """Your own models as a decider: a classifier, an embedding similarity, a vision model.
 
 A `LocalDecider` is a mapping from question keys to handlers. A handler receives the state
-and the question and returns an `Answer` (use `sancho.answers` to build one) or `None` when
+and the question and returns an `Answer` (use `sanchopanza.answers` to build one) or `None` when
 it cannot answer that question. Handlers may be sync or async. Unanswered questions stay
 empty, and the policies use their defaults for them: partial coverage is fine.
 

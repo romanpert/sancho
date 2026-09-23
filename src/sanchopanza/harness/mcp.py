@@ -9,10 +9,10 @@ guard, thread review). These are the ones the orchestrator calls deliberately:
 - `classify_field`: free text to a closed vocabulary, with `other` and abstention.
 - `triage_text`: is this text worth the large model's context for this purpose?
 
-Requires `pip install sancho[mcp]`. Works with any MCP client: Claude Code, Cursor, Codex,
+Requires `pip install sanchopanza[mcp]`. Works with any MCP client: Claude Code, Cursor, Codex,
 Copilot, Hermes or a custom harness.
 
-    from sancho.harness.mcp import build_server
+    from sanchopanza.harness.mcp import build_server
     build_server(squire).run()          # stdio
 """
 

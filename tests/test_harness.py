@@ -5,12 +5,12 @@ from __future__ import annotations
 import asyncio
 import json
 
-from sancho.harness import Guardian, HarnessConfig, ToolCall
-from sancho.harness.claude_agent_sdk import post_tool_use, pre_tool_use
-from sancho.harness.claude_code import config_from_env, decider_from_env, handle
-from sancho.harness.mcp import parse_lines, parse_options
-from sancho.harness.openai_agents import tool_guardrail
-from sancho.providers import FixedDecider, NullDecider, RecordedDecider
+from sanchopanza.harness import Guardian, HarnessConfig, ToolCall
+from sanchopanza.harness.claude_agent_sdk import post_tool_use, pre_tool_use
+from sanchopanza.harness.claude_code import config_from_env, decider_from_env, handle
+from sanchopanza.harness.mcp import parse_lines, parse_options
+from sanchopanza.harness.openai_agents import tool_guardrail
+from sanchopanza.providers import FixedDecider, NullDecider, RecordedDecider
 
 from .helpers import choice, score, squire, yes
 

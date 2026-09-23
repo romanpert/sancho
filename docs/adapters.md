@@ -1,11 +1,11 @@
 # Attaching Sancho to a harness
 
 Every adapter translates one thing: a tool call into a `Verdict`, and a tool result into an
-optional note. The translation lives in `sancho.harness.generic.Guardian`; the files in
-`sancho.harness` are the per-harness wire formats.
+optional note. The translation lives in `sanchopanza.harness.generic.Guardian`; the files in
+`sanchopanza.harness` are the per-harness wire formats.
 
 ```python
-from sancho.harness import Guardian, HarnessConfig, ToolCall
+from sanchopanza.harness import Guardian, HarnessConfig, ToolCall
 
 guardian = Guardian(squire, HarnessConfig(...))
 verdict = await guardian.before_tool(ToolCall("Bash", {"command": "rm -rf /"}))
@@ -25,7 +25,7 @@ Status: **tested** (hook input/output shapes; the SDK is not imported by the tes
 
 ```python
 from claude_agent_sdk import ClaudeAgentOptions, HookMatcher
-from sancho.harness.claude_agent_sdk import pre_tool_use, post_tool_use, hook_matchers
+from sanchopanza.harness.claude_agent_sdk import pre_tool_use, post_tool_use, hook_matchers
 
 options = ClaudeAgentOptions(hooks=hook_matchers(guardian))
 # or by hand:
@@ -52,7 +52,7 @@ through `create_sdk_mcp_server` in your harness if you want them in-process.
 
 Status: **tested** (stdin JSON to stdout JSON through `handle()`; environment parsing).
 
-`sancho hook` is a process per event. Configuration is by environment variables (see
+`sanchopanza hook` is a process per event. Configuration is by environment variables (see
 `examples/claude_code/README.md`). Same output shapes as the SDK. The hook exits 0 and prints
 nothing on any internal error: it can never block a tool by failing.
 
@@ -66,7 +66,7 @@ Status: **built on FastMCP, exercised through its parsers in tests; not run agai
 client in CI.**
 
 ```python
-from sancho.harness.mcp import build_server
+from sanchopanza.harness.mcp import build_server
 build_server(squire).run()
 ```
 
@@ -80,7 +80,7 @@ Copilot, Hermes Agent, or any MCP client.
 Status: **interface adapter; shape tested, not run against the SDK.**
 
 ```python
-from sancho.harness.openai_agents import tool_guardrail
+from sanchopanza.harness.openai_agents import tool_guardrail
 check = tool_guardrail(guardian)
 result = await check("shell", {"command": "..."})
 # {"tripwire_triggered": bool, "output_info": {"action", "reason", "arguments"}}
@@ -93,7 +93,7 @@ result["tripwire_triggered"])`. Argument rewriting has no guardrail equivalent; 
 ## LangChain, LangGraph and deepagents (middleware)
 
 ```python
-from sancho.harness.langchain import ToolSelectMiddleware
+from sanchopanza.harness.langchain import ToolSelectMiddleware
 
 agent = create_agent(model, tools, middleware=[ToolSelectMiddleware(squire, always={"web_search"})])
 ```
@@ -109,7 +109,7 @@ passes untouched.
 
 Tested in shape against a request-like object with `tools`, `messages` and `override(...)`,
 which is what LangChain 1.x `ModelRequest` exposes; not yet against a live agent loop, and
-not yet measured on a public bench. Requires `pip install sancho[langchain]` for the real
+not yet measured on a public bench. Requires `pip install sanchopanza[langchain]` for the real
 `AgentMiddleware` base; without LangChain the class still imports and runs for tests.
 
 ## Cursor, Copilot, Hermes Agent and others
@@ -118,8 +118,8 @@ Three routes, in order of effort:
 
 1. **MCP server** (above): works wherever MCP works, no code in the harness.
 2. **Command hook**: if the harness runs hooks as processes with JSON in and out, point it at
-   `sancho hook` and map field names. Claude Code's protocol is the default; a different one
-   is a ten-line wrapper around `sancho.harness.claude_code.handle`.
+   `sanchopanza hook` and map field names. Claude Code's protocol is the default; a different one
+   is a ten-line wrapper around `sanchopanza.harness.claude_code.handle`.
 3. **Middleware**: call `Guardian.before_tool` / `after_tool` from the harness's own tool
    middleware (a custom loop; for LangChain see the section above). The `Verdict` is three fields.
 

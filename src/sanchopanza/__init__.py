@@ -6,8 +6,8 @@ classifier, an LLM forced into a schema) takes the procedural decisions of an ag
 harness's hooks and tools, with calibrated probabilities, asymmetric thresholds, fail-open
 defaults and a journal entry for every decision.
 
-    from sancho import Squire, Thresholds
-    from sancho.providers import create
+    from sanchopanza import Squire, Thresholds
+    from sanchopanza.providers import create
 
     squire = Squire(create("jev"), thresholds=Thresholds())
     tier = await squire.route_task("List the rulings that mention defamation since 2020")

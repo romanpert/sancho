@@ -8,7 +8,7 @@
     FallbackDecider([a, b])               first provider that answers wins
     RoutedDecider({"routing": a}, b)      one provider per decision point
 
-Third-party packages register more under the `sancho.providers` entry-point group.
+Third-party packages register more under the `sanchopanza.providers` entry-point group.
 """
 
 from __future__ import annotations
@@ -36,11 +36,11 @@ __all__ = [
 ]
 
 _BUILTIN = {
-    "null": "sancho.providers.null:NullDecider",
-    "recorded": "sancho.providers.recorded:RecordedDecider",
-    "jev": "sancho.providers.jev:JevDecider",
-    "llm": "sancho.providers.llm:LLMDecider",
-    "local": "sancho.providers.local:LocalDecider",
+    "null": "sanchopanza.providers.null:NullDecider",
+    "recorded": "sanchopanza.providers.recorded:RecordedDecider",
+    "jev": "sanchopanza.providers.jev:JevDecider",
+    "llm": "sanchopanza.providers.llm:LLMDecider",
+    "local": "sanchopanza.providers.local:LocalDecider",
 }
 
 
@@ -53,7 +53,7 @@ def _load(target: str) -> type:
 def available() -> dict[str, str]:
     """Provider names and where they come from, built-ins plus installed entry points."""
     found = dict(_BUILTIN)
-    for ep in entry_points(group="sancho.providers"):
+    for ep in entry_points(group="sanchopanza.providers"):
         found.setdefault(ep.name, ep.value)
     return found
 
