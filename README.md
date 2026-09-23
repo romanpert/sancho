@@ -1,6 +1,7 @@
 <div align="center">
 
-<img src="docs/assets/logo.png" alt="Sanchopanza" width="180">
+<img src="https://raw.githubusercontent.com/romanpert/sancho/main/docs/assets/logo.png"
+     alt="Sanchopanza" width="180">
 
 # Sanchopanza
 
