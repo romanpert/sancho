@@ -73,9 +73,9 @@ is what the same arithmetic gives for pages of a realistic size, per page:
 
 | Page | Tokens | Expected tokens kept out | Value at Sonnet 5 | Cost of deciding | Net |
 |---|---|---|---|---|---|
-| extracto de noticia | 500 | 186 | 0.00037 USD | 0.000044 USD | **8x** |
-| articulo completo | 2,000 | 744 | 0.00149 USD | 0.000044 USD | **33x** |
-| PDF oficial | 10,000 | 3,720 | 0.00744 USD | 0.000044 USD | **167x** |
+| news snippet | 500 | 186 | 0.00037 USD | 0.000044 USD | **8x** |
+| full article | 2,000 | 744 | 0.00149 USD | 0.000044 USD | **33x** |
+| official PDF | 10,000 | 3,720 | 0.00744 USD | 0.000044 USD | **167x** |
 
 The same shape applies to a job. A round that fetches 40 pages of 2,000 tokens spends
 0.0018 USD on triage and keeps about 29,760 tokens out of the context, worth 0.0595 USD at Sonnet 5 input prices. Whether those
