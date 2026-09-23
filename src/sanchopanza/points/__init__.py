@@ -16,13 +16,30 @@ Three rules from the measurements, applied in every point:
 - Include `other` / `none` when the option list may not be exhaustive.
 """
 
-from . import citation, entities, guard, injection, plan, review, routing, search, tools, triage
+from . import (
+    citation,
+    entities,
+    graph,
+    guard,
+    injection,
+    loop,
+    memory,
+    plan,
+    review,
+    routing,
+    search,
+    tools,
+    triage,
+)
 
 __all__ = [
     "citation",
     "entities",
+    "graph",
     "guard",
     "injection",
+    "loop",
+    "memory",
     "plan",
     "review",
     "routing",

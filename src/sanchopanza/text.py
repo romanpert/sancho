@@ -129,3 +129,24 @@ def is_repeat(query: str, previous: Iterable[str], *, threshold: float = JACCARD
         if other and len(current & other) / len(current | other) >= threshold:
             return True
     return False
+
+
+def mention_present(mention: str, source: str, *, ratio: float = 0.5) -> bool:
+    """Is this entity mention in the text at all? Deterministic, before any model call.
+
+    A triple whose subject or object does not appear in the chunk it was extracted from was
+    invented by the extractor, and no decider has to be asked about it. The check is looser
+    than `quote_present` because extractors canonicalize: `Inversiones Delta S.A.` may be
+    written `Inversiones Delta` in the text. The whole normalized string counts as present,
+    and so does any mention at least `ratio` of whose content tokens appear.
+    """
+    mention_n, source_n = normalize(mention), normalize(source)
+    if not mention_n:
+        return False
+    if mention_n.lower() in source_n.lower():
+        return True
+    wanted = tokens(mention_n)
+    if not wanted:
+        return False
+    have = tokens(source_n)
+    return len(wanted & have) / len(wanted) >= ratio

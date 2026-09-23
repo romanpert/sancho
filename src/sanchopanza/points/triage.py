@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..contract import Choice, Decision, Question, Truth
-from ..policy import Thresholds, probability
+from ..policy import Thresholds, confident, probability
 from ..text import excerpt, truncate
 from . import injection
 
@@ -87,3 +87,77 @@ def decide(decision: Decision, t: Thresholds) -> Triage:
     if relevance < t.relevance:
         return Triage(False, f"not relevant ({relevance:.2f})", relevance, evidence, inj, kind)
     return Triage(True, f"relevant ({relevance:.2f})", relevance, evidence, inj, kind)
+
+
+# --- D3b: does this page repeat what the agent already has? -----------------------------
+#
+# Triage asks whether a page is about the purpose. It does not ask whether the agent has
+# already read the same thing somewhere else, and in a fetch-heavy job that is where the
+# tokens are: twenty sources covering one event carry the same five facts and one of them
+# is the original. Redundancy is the lever the end-to-end A/B could not exercise, because
+# its agent fetched one or two documents per task (benchmarks/ab, docs/savings.md).
+#
+# The asymmetry is the same as triage's and for the same reason: dropping a page that did
+# carry something new costs coverage, keeping one costs tokens. `t.redundant` is the same
+# knob the search point uses for a repeated query, because it is the same reading.
+
+DIGEST_LIMIT = 1200
+
+
+def redundancy_questions(
+    *, purpose: str, text: str, known: str
+) -> tuple[Mapping[str, Any], dict[str, Question]]:
+    """`known` is a digest of what the agent already holds: titles, facts, or both."""
+    state = {
+        "purpose": truncate(purpose, 400),
+        "known": truncate(known, DIGEST_LIMIT),
+        "text": excerpt(text, purpose, TEXT_LIMIT),
+    }
+    qs: dict[str, Question] = {
+        "adds_nothing": Truth(
+            "For the work described in `purpose`, does `text` add nothing that `known` does "
+            "not already carry: no new figure, date, name, outcome, qualification or source?",
+            criteria={
+                "true": {
+                    "what": "The same facts in different words, a shorter version, a wire "
+                    "story reprinted, or a page that only cites what `known` already states",
+                    "examples": [
+                        "known: '1,240 homes damaged, 312 severe'; text: an article giving "
+                        "the same two figures and nothing else"
+                    ],
+                },
+                "false": {
+                    "what": "Any new value, any correction, any date or source that `known` "
+                    "lacks, or the same facts attributed to a different source when the work "
+                    "is about corroboration",
+                    "examples": [
+                        "known: '1,240 homes damaged'; text: the same, plus the municipality "
+                        "breakdown",
+                        "known: a newspaper's figure; text: the official bulletin's figure, "
+                        "when `purpose` is to corroborate it",
+                    ],
+                },
+            },
+        )
+    }
+    return state, qs
+
+
+@dataclass(frozen=True, slots=True)
+class Redundancy:
+    drop: bool
+    reason: str
+    probability: float
+
+
+def decide_redundancy(decision: Decision, t: Thresholds) -> Redundancy:
+    """Drop only on a confident yes. No data, a failure or doubt all keep the page."""
+    if decision.failed:
+        return Redundancy(False, "decider unavailable: keep", 0.0)
+    answer = decision.answer("adds_nothing")
+    p = probability(answer)
+    if answer.empty:
+        return Redundancy(False, "no data: keep", p)
+    if p >= t.redundant and confident(answer, t.act):
+        return Redundancy(True, f"adds nothing new ({p:.2f})", p)
+    return Redundancy(False, f"may add something ({p:.2f})", p)

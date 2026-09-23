@@ -1,0 +1,45 @@
+# The loop guard: is the goal already met, and is this check a repeat? (26 cases).
+#
+# This is the point with the largest measured waste behind it. In a preregistered study of
+# 4,644 coding-agent runs, runs that fell into redundant verification at its extreme level
+# cost 18x the clean-run median, made 2.5x the tool calls and took 3x the wall time, with no
+# improvement in success (arXiv 2608.01347, Weinberger and Hozez, 2026).
+#
+# goal_met:      goal + what the agent has established -> true | false. The false cases are
+#                the dangerous ones: a run that is nearly finished looks finished, and an
+#                agent told to stop one step early loses the deliverable. Hard negatives
+#                include a goal with two parts where only one is done, and a `done` that
+#                records attempts rather than results.
+# repeats_check: goal + done + the pending action -> true | false. Hard negatives: a check
+#                that looks identical but runs after a change, and the same fact checked
+#                against a different source, which is corroboration, not repetition.
+#
+# Both are binary, so AUC, Brier and ECE are computable. Single-annotator, authored
+# 2026-09-24. Mixed Spanish and English content, because this point is harness-shaped
+# rather than investigation-shaped.
+{"id": "gm-01", "point": "goal_met", "input": {"goal": "Averiguar la multa impuesta en la sentencia TC/1148/25 y la fecha en que se dicto.", "done": "La sentencia TC/1148/25, de 7 de noviembre de 2025, condena al pago de una indemnizacion de RD$500.000. Ambos datos salen del texto oficial descargado del portal del Tribunal."}, "expected": true}
+{"id": "gm-02", "point": "goal_met", "input": {"goal": "Averiguar la multa impuesta en la sentencia TC/1148/25 y la fecha en que se dicto.", "done": "La sentencia condena al pago de RD$500.000. No he localizado todavia la fecha en que se dicto."}, "expected": false}
+{"id": "gm-03", "point": "goal_met", "input": {"goal": "Averiguar la multa impuesta en la sentencia TC/1148/25 y la fecha en que se dicto.", "done": "He buscado tres veces en el portal del Tribunal y en dos hemerotecas. Hay varias referencias a la sentencia pero ninguna da todavia las cifras."}, "expected": false}
+{"id": "gm-04", "point": "goal_met", "input": {"goal": "Listar los articulos de la Ley 6132 anulados por el Tribunal Constitucional.", "done": "TC/1148/25 declara inconstitucionales los articulos 34, 35 y 36 de la Ley 6132, segun el fallo literal del texto oficial."}, "expected": true}
+{"id": "gm-05", "point": "goal_met", "input": {"goal": "Listar los articulos de la Ley 6132 anulados por el Tribunal Constitucional y decir si queda alguno vigente sobre difamacion.", "done": "TC/1148/25 declara inconstitucionales los articulos 34, 35 y 36 de la Ley 6132."}, "expected": false}
+{"id": "gm-06", "point": "goal_met", "input": {"goal": "Fix the failing test in tests/test_policy.py.", "done": "Changed the threshold comparison in policy.py from > to >=. Ran the suite: 97 passed, 0 failed."}, "expected": true}
+{"id": "gm-07", "point": "goal_met", "input": {"goal": "Fix the failing test in tests/test_policy.py.", "done": "Changed the threshold comparison in policy.py from > to >=. Have not run the suite yet."}, "expected": false}
+{"id": "gm-08", "point": "goal_met", "input": {"goal": "Fix the failing test in tests/test_policy.py without breaking anything else.", "done": "Changed the comparison in policy.py. tests/test_policy.py passes. The rest of the suite has not been run since the change."}, "expected": false}
+{"id": "gm-09", "point": "goal_met", "input": {"goal": "Decir cuantas viviendas resultaron danadas por el sismo y cuantas con dano estructural severo.", "done": "Boletin oficial de Proteccion Civil del 14 de marzo: 1.240 viviendas con danos, de las cuales 312 con dano estructural severo."}, "expected": true}
+{"id": "gm-10", "point": "goal_met", "input": {"goal": "Decir cuantas viviendas resultaron danadas por el sismo y cuantas con dano estructural severo.", "done": "Un diario local habla de mas de mil viviendas afectadas, sin desglosar la gravedad de los danos."}, "expected": false}
+{"id": "gm-11", "point": "goal_met", "input": {"goal": "Identificar al socio unico de Inversiones Delta S.A. y su fecha de constitucion.", "done": "Registro panameno: Inversiones Delta S.A., constituida en 2011, socio unico Mario Reyes Castillo."}, "expected": true}
+{"id": "gm-12", "point": "goal_met", "input": {"goal": "Identificar al socio unico de Inversiones Delta S.A., su fecha de constitucion y su matriz.", "done": "Registro panameno: Inversiones Delta S.A., constituida en 2011, socio unico Mario Reyes Castillo. La matriz aparece mencionada en un articulo pero no he podido confirmarla en el registro."}, "expected": false}
+{"id": "gm-13", "point": "goal_met", "input": {"goal": "Write the release notes for version 0.2.0 from the commit log.", "done": "Read the 14 commits since v0.1.0, grouped them into four sections and wrote CHANGELOG.md. The file now covers every commit in the range."}, "expected": true}
+{"id": "gm-14", "point": "goal_met", "input": {"goal": "Write the release notes for version 0.2.0 from the commit log.", "done": "Listed the 14 commits since v0.1.0 and drafted an outline of the sections the notes should have."}, "expected": false}
+{"id": "rp-01", "point": "repeats_check", "input": {"goal": "Fix the failing test in tests/test_policy.py.", "done": "Changed the comparison in policy.py. Ran the full suite: 97 passed. No files have been touched since.", "pending": "Run the full test suite again."}, "expected": true}
+{"id": "rp-02", "point": "repeats_check", "input": {"goal": "Fix the failing test in tests/test_policy.py.", "done": "Changed the comparison in policy.py. Ran the full suite: 97 passed. Then edited policy.py again to rename a variable.", "pending": "Run the full test suite again."}, "expected": false}
+{"id": "rp-03", "point": "repeats_check", "input": {"goal": "Confirmar la cifra de viviendas danadas.", "done": "El boletin oficial de Proteccion Civil da 1.240 viviendas con danos.", "pending": "Volver a abrir el boletin de Proteccion Civil para comprobar la cifra."}, "expected": true}
+{"id": "rp-04", "point": "repeats_check", "input": {"goal": "Confirmar la cifra de viviendas danadas en una segunda fuente.", "done": "El diario local da 1.240 viviendas con danos.", "pending": "Abrir el boletin oficial de Proteccion Civil para comprobar la cifra."}, "expected": false}
+{"id": "rp-05", "point": "repeats_check", "input": {"goal": "Averiguar la multa de la sentencia TC/1148/25.", "done": "Descargado y leido el texto de TC/1148/25: la indemnizacion es de RD$500.000.", "pending": "Descargar otra vez el texto de TC/1148/25 para leer la multa.", "checks": ["lectura del texto de TC/1148/25 para la multa"]}, "expected": true}
+{"id": "rp-06", "point": "repeats_check", "input": {"goal": "Averiguar la multa de la sentencia TC/1148/25 y si fue recurrida.", "done": "Descargado y leido el texto de TC/1148/25: la indemnizacion es de RD$500.000.", "pending": "Buscar en el portal si TC/1148/25 tiene recurso posterior."}, "expected": false}
+{"id": "rp-07", "point": "repeats_check", "input": {"goal": "Build the package and check it installs.", "done": "Ran the build: wheel and sdist produced. Installed the wheel in a clean venv and imported the package: import succeeded.", "pending": "Install the wheel in a clean venv and import the package."}, "expected": true}
+{"id": "rp-08", "point": "repeats_check", "input": {"goal": "Build the package and check it installs on both supported Python versions.", "done": "Installed the wheel in a clean Python 3.11 venv and imported it: import succeeded.", "pending": "Install the wheel in a clean Python 3.12 venv and import the package."}, "expected": false}
+{"id": "rp-09", "point": "repeats_check", "input": {"goal": "Comprobar que el informe cita sus fuentes.", "done": "Revisadas las 9 citas del informe: todas apuntan a un documento descargado y la cita literal aparece en el texto.", "pending": "Revisar otra vez las citas del informe."}, "expected": true}
+{"id": "rp-10", "point": "repeats_check", "input": {"goal": "Comprobar que el informe cita sus fuentes y que las cifras coinciden con el original.", "done": "Revisadas las 9 citas del informe: todas apuntan a un documento descargado.", "pending": "Comparar cada cifra del informe con la del documento original."}, "expected": false}
+{"id": "rp-11", "point": "repeats_check", "input": {"goal": "Run the linter and fix what it reports.", "done": "Ran ruff: 2 errors. Fixed both. Ran ruff again: all checks passed.", "pending": "Run ruff once more to be sure."}, "expected": true}
+{"id": "rp-12", "point": "repeats_check", "input": {"goal": "Run the linter and the formatter and fix what they report.", "done": "Ran ruff check: all checks passed.", "pending": "Run ruff format --check."}, "expected": false}

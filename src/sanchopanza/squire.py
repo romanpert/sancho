@@ -27,10 +27,23 @@ from .budget import Meter
 from .contract import Decider, DeciderUnavailable, Decision, Question, State
 from .dag import Edge, build_dag, waves
 from .journal import Journal, NullJournal, decision_event
-from .points import citation, entities, guard, plan, review, routing, search, tools, triage
+from .points import (
+    citation,
+    entities,
+    graph,
+    guard,
+    loop,
+    memory,
+    plan,
+    review,
+    routing,
+    search,
+    tools,
+    triage,
+)
 from .policy import Thresholds
 from .providers.null import NullDecider
-from .text import is_repeat, quote_present
+from .text import is_repeat, mention_present, quote_present
 
 
 @dataclass(frozen=True, slots=True)
@@ -364,3 +377,84 @@ class Squire:
         category, p, dist = entities.decide_classification(decision, self._t, options=options)
         self.record(decision, field=field, category=category, probability=p)
         return category, p, dist
+
+    # --- fetch-heavy retrieval, memory and graph ------------------------------------
+
+    async def triage_redundant(self, *, purpose: str, text: str, known: str) -> triage.Redundancy:
+        """Does this page repeat what the agent already holds? Drops only on a confident yes.
+
+        The lever the end-to-end A/B could not exercise, because its agent fetched one or
+        two documents per task. It bites when a job gathers many sources about one event.
+        """
+        state, qs = triage.redundancy_questions(purpose=purpose, text=text, known=known)
+        decision = await self.decide("redundant_page", state, qs)
+        result = triage.decide_redundancy(decision, self._t)
+        self.record(decision, drop=result.drop, reason=result.reason)
+        return result
+
+    async def remember(self, fact: str, *, source: str = "") -> memory.Write:
+        """Is this worth writing to long-term memory? Stores only on a confident yes."""
+        state, qs = memory.write_questions(fact=fact, brief=self._brief, source=source)
+        decision = await self.decide("memory_write", state, qs)
+        result = memory.decide_write(decision, self._t)
+        self.record(decision, store=result.store, reason=result.reason)
+        return result
+
+    async def reconcile(
+        self, *, new: str, stored: str, newer: bool | None = None
+    ) -> memory.Reconciliation:
+        """What to do with a candidate memory that touches a stored one.
+
+        `newer` comes from the harness's timestamps, never from the decider: this model
+        class reads dates as text, and replacing the wrong way round is a silent loss.
+        Without it a real collision is flagged, not resolved.
+        """
+        state, qs = memory.collision_questions(new=new, stored=stored)
+        decision = await self.decide("memory_collision", state, qs)
+        result = memory.decide_collision(decision, self._t, newer=newer)
+        self.record(decision, action=result.action, reason=result.reason)
+        return result
+
+    async def needs_recall(self, turn: str, *, topics: str = "") -> memory.Recall:
+        """Does this turn need a memory lookup at all? Skips only on a confident no."""
+        state, qs = memory.recall_questions(turn=turn, topics=topics)
+        decision = await self.decide("recall", state, qs)
+        result = memory.decide_recall(decision, self._t)
+        self.record(decision, look=result.look, reason=result.reason)
+        return result
+
+    async def gate_extraction(
+        self, *, chunk: str, looking_for: str, kinds: Sequence[str] = ()
+    ) -> graph.Gate:
+        """Is this chunk worth a generative extraction call? Skips only on a confident no."""
+        state, qs = graph.gate_questions(chunk=chunk, looking_for=looking_for, kinds=kinds)
+        decision = await self.decide("extract_gate", state, qs)
+        result = graph.decide_gate(decision, self._t)
+        self.record(decision, extract=result.extract, reason=result.reason)
+        return result
+
+    async def verify_edge(
+        self, *, subject: str, relation: str, obj: str, text: str
+    ) -> graph.EdgeCheck:
+        """Does the text state this triple? Mentions in code, meaning in the decider."""
+        found = mention_present(subject, text) and mention_present(obj, text)
+        if not found:
+            decision = Decision("edge", {}, "code", "-")
+            result = graph.decide_edge(decision, self._t, mentions_found=False)
+            self.record(decision, verdict=result.verdict, reason="a mention is not in the text")
+            return result
+        state, qs = graph.edge_questions(subject=subject, relation=relation, obj=obj, text=text)
+        decision = await self.decide("edge", state, qs)
+        result = graph.decide_edge(decision, self._t, mentions_found=True)
+        self.record(decision, verdict=result.verdict, stated=result.stated)
+        return result
+
+    async def check_loop(
+        self, *, goal: str, done: str, pending: str = "", checks: Sequence[str] = ()
+    ) -> loop.LoopAdvice:
+        """Is the goal already met, or is this check a repeat? Advises; never denies."""
+        state, qs = loop.questions(goal=goal, done=done, pending=pending, checks=checks)
+        decision = await self.decide("loop", state, qs)
+        result = loop.decide(decision, self._t)
+        self.record(decision, message=result.message or None)
+        return result

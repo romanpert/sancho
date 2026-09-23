@@ -8,6 +8,16 @@ keys and labels are English.
 | `benches/core.jsonl` | 74 | routing 20, search 18, triage 16, citation 20 | one annotator |
 | `benches/safety.jsonl` | 106 | injection 28, command 32, unsourced 22, numeric_citation 24 | one annotator; adversarial cases written, not harvested |
 | `benches/graph.jsonl` | 65 | entity 24, facts 20, dependency 20, plan 1 (56 pairs) | one annotator |
+| `benches/memory.jsonl` | 46 | memory_write 16, memory_collision 16, recall 14 | one annotator, 2026-09-24 |
+| `benches/graph-build.jsonl` | 36 | extract_gate 16, edge 20 | one annotator, 2026-09-24 |
+| `benches/retrieval.jsonl` | 16 | redundant_page 16 | one annotator, 2026-09-24 |
+| `benches/loop.jsonl` | 26 | goal_met 14, repeats_check 12 | one annotator, 2026-09-24 |
+
+The four files added in 0.2.0 replay from `fixtures/new-points.jsonl` and are weaker evidence
+than the first three: fewer cases per point, one sitting, and three labels corrected after
+seeing the run (the corrections and their reasons are in the file headers). Read
+`docs/results/2026-09-24-new-points/summary.md` with `docs/paper.md` Section 5.10, which
+reports what those runs found about this package's own thresholds.
 
 The 298 closed-vocabulary classifications reported in the paper are not published: they are
 the register of a real investigation.

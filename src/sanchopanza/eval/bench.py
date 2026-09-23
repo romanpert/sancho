@@ -20,6 +20,14 @@ Points and their inputs / labels:
     dependency       a_title, a_goal, b_title, b_goal  true | false (b needs a)
     plan             lines [{id,title,goal}], edges    (evaluated as a whole: precision/recall)
     classify         field, text, options, context     one of the options
+    memory_write     fact, source                      store | skip
+    memory_collision new, stored, newer                duplicate | replace | flag | keep_both
+    recall           turn, topics                      look | skip
+    extract_gate     chunk, looking_for, kinds         extract | skip
+    edge             subject, relation, obj, text      supported | reversed | unsupported
+    redundant_page   purpose, text, known              drop | keep
+    goal_met         goal, done                        true | false
+    repeats_check    goal, done, pending, checks       true | false
 
 Each row records what the policy decided, with what confidence, and the raw probability
 for binary points, so AUC, Brier and ECE can be recomputed from the JSON.
@@ -43,7 +51,31 @@ from ..squire import Squire
 from . import stats
 
 BANDS = ((0.0, 0.4), (0.4, 0.6), (0.6, 0.75), (0.75, 0.9), (0.9, 1.01))
-BINARY_POINTS = frozenset({"injection", "command", "unsourced", "entity", "dependency"})
+BINARY_POINTS = frozenset(
+    {
+        "injection",
+        "command",
+        "unsourced",
+        "entity",
+        "dependency",
+        "memory_write",
+        "recall",
+        "extract_gate",
+        "redundant_page",
+        "goal_met",
+        "repeats_check",
+    }
+)
+# Points whose label is a word rather than a boolean, but whose decision is still binary:
+# the word that corresponds to a high probability. Without this the most informative
+# metric for a gate, its AUC, would be unavailable purely because the label reads better
+# as "store" than as "true".
+POSITIVE_LABEL = {
+    "memory_write": "store",
+    "recall": "look",
+    "extract_gate": "extract",
+    "redundant_page": "drop",
+}
 PRIMITIVE_OF = {
     "routing": "score",
     "search": "truth",
@@ -57,6 +89,14 @@ PRIMITIVE_OF = {
     "facts": "choice",
     "dependency": "truth",
     "classify": "choice",
+    "memory_write": "truth",
+    "memory_collision": "truth",
+    "recall": "truth",
+    "extract_gate": "truth",
+    "edge": "truth",
+    "redundant_page": "truth",
+    "goal_met": "truth",
+    "repeats_check": "truth",
 }
 
 
@@ -178,13 +218,60 @@ async def _run_case(
             add_other=inp.get("add_other", True),
         )
         predicted, confidence = category, probability
+    elif point == "memory_write":
+        r = await squire.remember(inp["fact"], source=inp.get("source", ""))
+        predicted = "store" if r.store else "skip"
+        # The policy is a conjunction, so the score that orders these cases is the weakest
+        # of its three margins. Reporting `durable` alone would punish the point for the
+        # cases it is meant to catch: durable, specific, and re-readable from the source.
+        probability = min(r.durable, r.specific, 1.0 - r.derivable)
+        confidence = truth_confidence(probability)
+    elif point == "memory_collision":
+        r = await squire.reconcile(new=inp["new"], stored=inp["stored"], newer=inp.get("newer"))
+        predicted = r.action
+        confidence = max(truth_confidence(r.contradicts), truth_confidence(r.adds_nothing))
+    elif point == "recall":
+        r = await squire.needs_recall(inp["turn"], topics=inp.get("topics", ""))
+        predicted = "look" if r.look else "skip"
+        probability = r.probability
+        confidence = truth_confidence(probability)
+    elif point == "extract_gate":
+        r = await squire.gate_extraction(
+            chunk=inp["chunk"], looking_for=inp["looking_for"], kinds=inp.get("kinds", ())
+        )
+        predicted = "extract" if r.extract else "skip"
+        probability = r.probability
+        confidence = truth_confidence(probability)
+    elif point == "edge":
+        r = await squire.verify_edge(
+            subject=inp["subject"], relation=inp["relation"], obj=inp["obj"], text=inp["text"]
+        )
+        predicted = r.verdict
+        confidence = r.confidence
+    elif point == "redundant_page":
+        r = await squire.triage_redundant(
+            purpose=inp["purpose"], text=inp["text"], known=inp["known"]
+        )
+        predicted = "drop" if r.drop else "keep"
+        probability = r.probability
+        confidence = truth_confidence(probability)
+    elif point in ("goal_met", "repeats_check"):
+        r = await squire.check_loop(
+            goal=inp["goal"],
+            done=inp["done"],
+            pending=inp.get("pending", ""),
+            checks=inp.get("checks", ()),
+        )
+        probability = r.goal_met if point == "goal_met" else r.repeats_check
+        predicted = probability >= 0.5
+        confidence = truth_confidence(probability)
     elif point == "plan":
         return await _plan(squire, journal, case, before)
     else:
         raise ValueError(f"unknown point: {point}")
 
     meta = _meta(journal.events[before:])
-    decided = predicted is not None and predicted != "review" and predicted != "code"
+    decided = predicted is not None and predicted not in ("review", "code")
     correct = None if not decided else (predicted == expected)
     return Row(
         id=str(case["id"]),
@@ -340,10 +427,17 @@ def summarize(results: Sequence[Row | dict[str, Any]]) -> dict[str, Any]:
                 "correct": code_correct,
                 "combined": code_correct + hits,
             }
-        binary = [r for r in group if r.probability is not None and isinstance(r.expected, bool)]
+        positive = POSITIVE_LABEL.get(point)
+        binary = [
+            r
+            for r in group
+            if r.probability is not None and (isinstance(r.expected, bool) or positive is not None)
+        ]
         if point in BINARY_POINTS and binary:
             probs = [r.probability for r in binary]  # type: ignore[misc]
-            truths = [bool(r.expected) for r in binary]
+            truths = [
+                bool(r.expected) if positive is None else r.expected == positive for r in binary
+            ]
             entry["auc"] = stats.auc(probs, truths)
             entry["brier"] = stats.brier(probs, truths)
             entry["ece"] = stats.ece(probs, truths)

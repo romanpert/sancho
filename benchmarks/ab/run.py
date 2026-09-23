@@ -4,10 +4,20 @@
     python -m benchmarks.ab.run --repeats 1 --tasks injection,cost     # a cheap pilot
     python -m benchmarks.ab.run --repeats 3 --out benchmarks/ab/results/2026-09-24
 
-What this measures, and only this: **page triage**. Both arms run byte-identical prompts,
-tools, model, thinking and effort. The single difference is that in the `squire` arm the
-`fetch` tool passes the page through `Squire.triage_page` first, and a page judged
-irrelevant to the stated purpose comes back as a one-line note instead of its text.
+What this measures: one or both of two levers, chosen with `--lever`. Both arms run
+byte-identical prompts, tools, model, thinking and effort; the single difference is what the
+`fetch` tool does to a page before it enters the context.
+
+- `triage` (the default, and what the null result of 2026-09-24 measured): the page goes
+  through `Squire.triage_page`, and one judged irrelevant to the stated purpose comes back as
+  a one-line note instead of its text.
+- `redundancy`: the page goes through `Squire.triage_redundant` against a digest of what the
+  agent has already kept, and one that adds nothing new comes back as a note. **This is the
+  lever the first A/B could not exercise**, because its tasks fetched 1.8 documents each and
+  there was nothing to be redundant with. Use it with `--tasks` naming the multi-source tasks
+  (`pins` in `tasks.jsonl`), which need four to six distinct documents before they can be
+  answered.
+- `both`: triage first, then redundancy on what survives.
 
 What it does not measure: model routing, search routing, the citation check or the shell
 guard. Those levers are not exercised here, so nothing in this benchmark speaks to them.
@@ -95,6 +105,19 @@ CONDICIONES = {
     },
 }
 
+CONDICIONES["scattered"] = {
+    "realce_titulo": 0,
+    "limite": 16,
+    "sistema": BASE_SISTEMA
+    + " The answer to this question is spread across several documents: no single one "
+    "contains all of it. Gather from as many as you need, and do not answer until you have "
+    "every figure you were asked for.",
+    "fragmentos": True,
+    "descripcion": "body-frequency ranking over a wide result list, with the agent told the "
+    "answer is spread across documents. This is the fetch-heavy condition: the one where a "
+    "lever that keeps redundant sources out of the context has something to keep out",
+}
+
 HERRAMIENTAS = [
     {
         "name": "search",
@@ -145,6 +168,9 @@ class Ejecucion:
     model_cost_usd: float = 0.0
     squire_cost_usd: float = 0.0
     squire_decisions: int = 0
+    dropped_redundant: list[str] = field(default_factory=list)
+    digest: list[str] = field(default_factory=list)
+    lever: str = "triage"
     fetched: list[str] = field(default_factory=list)
     dropped: list[str] = field(default_factory=list)
     wall_s: float = 0.0
@@ -177,20 +203,40 @@ def coste(modelo: str, uso: Any) -> float:
     ) / 1_000_000
 
 
+DIGESTO_POR_DOC = 220
+
+
 async def _texto_de_pagina(
-    doc: Document, proposito: str, squire: Squire | None, registro: Ejecucion
+    doc: Document,
+    proposito: str,
+    squire: Squire | None,
+    registro: Ejecucion,
+    lever: str = "triage",
 ) -> str:
     """El unico punto donde los dos brazos difieren."""
     if squire is None:
         return doc.text
-    criba = await squire.triage_page(purpose=proposito, title=doc.title, text=doc.text)
-    if criba.keep:
-        return doc.text
-    registro.dropped.append(doc.id)
-    return (
-        f"[dropped by triage: {criba.reason}] This document does not address "
-        f"'{proposito}'. Fetch a different one."
-    )
+    if lever in ("triage", "both"):
+        criba = await squire.triage_page(purpose=proposito, title=doc.title, text=doc.text)
+        if not criba.keep:
+            registro.dropped.append(doc.id)
+            return (
+                f"[dropped by triage: {criba.reason}] This document does not address "
+                f"'{proposito}'. Fetch a different one."
+            )
+    if lever in ("redundancy", "both") and registro.digest:
+        repetida = await squire.triage_redundant(
+            purpose=proposito, text=doc.text, known="\n".join(registro.digest)
+        )
+        if repetida.drop:
+            registro.dropped_redundant.append(doc.id)
+            return (
+                f"[dropped as redundant: {repetida.reason}] This document repeats what you "
+                f"already have about '{proposito}'. Fetch a different one."
+            )
+    # Lo que entra al contexto entra tambien al digesto: es lo que el agente ya sabe.
+    registro.digest.append(f"{doc.title}: {' '.join(doc.text.split())[:DIGESTO_POR_DOC]}")
+    return doc.text
 
 
 async def una_ejecucion(
@@ -204,10 +250,16 @@ async def una_ejecucion(
     modelo: str,
     squire: Squire | None,
     condicion: dict[str, Any],
+    lever: str = "triage",
 ) -> Ejecucion:
     por_id = {d.id: d for d in documentos}
     registro = Ejecucion(
-        task=tarea["id"], arm=arm, repeat=repeat, model=modelo, retrieval=args_retrieval
+        task=tarea["id"],
+        arm=arm,
+        repeat=repeat,
+        model=modelo,
+        retrieval=args_retrieval,
+        lever=lever,
     )
     mensajes: list[dict[str, Any]] = [{"role": "user", "content": tarea["question"]}]
     inicio = time.monotonic()
@@ -266,7 +318,7 @@ async def una_ejecucion(
                     else:
                         registro.fetched.append(doc.id)
                         cuerpo = await _texto_de_pagina(
-                            doc, str(bloque.input.get("purpose", "")), squire, registro
+                            doc, str(bloque.input.get("purpose", "")), squire, registro, lever
                         )
                 resultados.append(
                     {"type": "tool_result", "tool_use_id": bloque.id, "content": cuerpo}
@@ -294,7 +346,26 @@ def verificar(documentos: list[Document], tareas: list[dict[str, Any]]) -> int:
     """
     problemas = 0
     for tarea in tareas:
-        pin = tarea["pin"]
+        # Una tarea multi-fuente lleva varios `pins`: cada uno en un documento distinto, y
+        # todos distintos entre si, de modo que responderla exige recuperarlos todos.
+        pins = tarea.get("pins") or [tarea["pin"]]
+        if len(pins) > 1:
+            ubicaciones = [sorted(d.id for d in documentos if p in d.text) for p in pins]
+            unicos = all(len(u) == 1 for u in ubicaciones)
+            distintos = len({u[0] for u in ubicaciones if u}) == len(pins)
+            ok = unicos and distintos
+            problemas += 0 if ok else 1
+            print(
+                f"  {'ok ' if ok else 'MAL'} {tarea['id']:12} {len(pins)} pins en "
+                f"{[u[0] if len(u) == 1 else u for u in ubicaciones]}"
+            )
+            for aguja in tarea["answer_contains"]:
+                alcanzable = any(aguja in d.text for d in documentos)
+                problemas += 0 if alcanzable else 1
+                if not alcanzable:
+                    print(f"      MAL answer_contains {aguja!r} no esta en el corpus")
+            continue
+        pin = pins[0]
         donde = sorted(d.id for d in documentos if pin in d.text)
         # Lo que tiene que cumplirse es que el dato este en un unico documento, no que ese
         # documento tenga un id concreto: los ids cambian con el troceado y la propiedad no.
@@ -531,6 +602,7 @@ async def principal(args: argparse.Namespace) -> int:
                     cliente,
                     documentos,
                     tarea,
+                    lever=args.lever,
                     arm=arm,
                     repeat=repeticion,
                     args_retrieval=args.retrieval,
@@ -597,7 +669,13 @@ def main(argv: list[str] | None = None) -> int:
         "--retrieval",
         choices=sorted(CONDICIONES),
         default="noisy",
-        help="lo buena que es la recuperacion: precise o noisy",
+        help="lo buena que es la recuperacion: precise, noisy o scattered",
+    )
+    p.add_argument(
+        "--lever",
+        choices=("triage", "redundancy", "both"),
+        default="triage",
+        help="que palanca se mide; redundancy exige tareas multi-fuente y --retrieval scattered",
     )
     p.add_argument("--verify", action="store_true", help="comprueba la verdad de referencia")
     return asyncio.run(principal(p.parse_args(argv)))

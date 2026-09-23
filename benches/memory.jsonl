@@ -1,0 +1,67 @@
+# Agent memory: what to write down, what it collides with, and when to go looking (46 cases).
+#
+# memory_write:     a candidate fact (+ the source it came from, if any) -> store | skip.
+#                   Hard negatives: things that are true, durable and specific but can be
+#                   re-read from a source the agent already holds, which is the failure mode
+#                   that turns a memory store into a slow copy of the repository.
+# memory_collision: a candidate fact against one already stored, plus the harness's own
+#                   `newer` from its timestamps -> duplicate | replace | flag | keep_both.
+#                   Hard negatives: corroboration (same field, same value, another source),
+#                   which is not a conflict, and two dates that belong to different events.
+# recall:           one turn of a conversation -> look | skip. Hard negatives: turns that
+#                   look self-contained but refer to a stored preference, and turns that
+#                   look like they need history but carry everything they need.
+#
+# RELABELLED after the first run, on the question's own criteria: mc-13's new fact says
+# 'socio unico', which is more specific than the stored 'pertenece a', so it is not a
+# restatement. mc-01 and mc-07 were left as they were: the model missed them at low
+# confidence, and a bench that moves its labels to match the model measures nothing.
+#
+# Single-annotator, authored 2026-09-24, unlike the points in paper Section 5 these have no
+# second pass. Content is Spanish without accents, matching the other benches.
+{"id": "mw-01", "point": "memory_write", "input": {"fact": "El registro judicial de Santo Domingo solo publica en linea las sentencias desde 2018; las anteriores hay que pedirlas en ventanilla."}, "expected": "store"}
+{"id": "mw-02", "point": "memory_write", "input": {"fact": "El cliente pidio que el informe final vaya en castellano y sin anglicismos."}, "expected": "store"}
+{"id": "mw-03", "point": "memory_write", "input": {"fact": "Descartamos la sentencia TC/1652/25: mismo apellido pero el imputado es otro, hijo del que buscamos."}, "expected": "store"}
+{"id": "mw-04", "point": "memory_write", "input": {"fact": "El portal de la Camara de Comercio devuelve 403 si la peticion no lleva cabecera referer."}, "expected": "store"}
+{"id": "mw-05", "point": "memory_write", "input": {"fact": "El SGC y el USGS discrepan en la profundidad del sismo, 103 frente a 110 km; para el informe vale el dato del SGC por ser la fuente oficial del pais."}, "expected": "store"}
+{"id": "mw-06", "point": "memory_write", "input": {"fact": "La cuota diaria del buscador gratuito se agota hacia las 16:00; a partir de ahi solo queda la busqueda de pago."}, "expected": "store"}
+{"id": "mw-07", "point": "memory_write", "input": {"fact": "El juzgado 12 de Santiago no contesta correos; solo atiende por telefono los martes de 9 a 11."}, "expected": "store"}
+{"id": "mw-08", "point": "memory_write", "input": {"fact": "Inversiones Delta figura en el registro de Panama desde 2011 con Mario Reyes como socio unico."}, "expected": "store"}
+{"id": "mw-09", "point": "memory_write", "input": {"fact": "Vamos por la cuarta busqueda y la sentencia todavia no aparece."}, "expected": "skip"}
+{"id": "mw-10", "point": "memory_write", "input": {"fact": "El usuario nos ha pedido que investiguemos a Inversiones Delta."}, "expected": "skip"}
+{"id": "mw-11", "point": "memory_write", "input": {"fact": "Hay informacion relevante sobre la empresa en varios portales."}, "expected": "skip"}
+{"id": "mw-12", "point": "memory_write", "input": {"fact": "La difamacion esta regulada por ley en casi todos los paises y ha cambiado con los anos."}, "expected": "skip"}
+{"id": "mw-13", "point": "memory_write", "input": {"fact": "La sentencia TC/1148/25 dice literalmente: se condena al pago de una indemnizacion de RD$500.000 a favor del querellante.", "source": "Texto completo de TC/1148/25, ya descargado en el volumen del trabajo como tc-1148-25.txt"}, "expected": "skip"}
+{"id": "mw-14", "point": "memory_write", "input": {"fact": "La funcion que monta el contenedor esta definida en agent/harness/contenedor/lanzar.py.", "source": "El repositorio del proyecto, al que el agente tiene acceso de lectura"}, "expected": "skip"}
+{"id": "mw-15", "point": "memory_write", "input": {"fact": "El siguiente paso es redactar el apartado de antecedentes."}, "expected": "skip"}
+{"id": "mw-16", "point": "memory_write", "input": {"fact": "La pagina del registro va lenta esta manana."}, "expected": "skip"}
+{"id": "mc-01", "point": "memory_collision", "input": {"new": "La multa fue de 500.000 pesos.", "stored": "Lo condenan al pago de una indemnizacion de RD$500.000 a favor del querellante.", "newer": null}, "expected": "duplicate"}
+{"id": "mc-02", "point": "memory_collision", "input": {"new": "Tras la apelacion la multa quedo en 200.000 pesos.", "stored": "La multa fue de 500.000 pesos.", "newer": true}, "expected": "replace"}
+{"id": "mc-03", "point": "memory_collision", "input": {"new": "Tras la apelacion la multa quedo en 200.000 pesos.", "stored": "La multa fue de 500.000 pesos.", "newer": null}, "expected": "flag"}
+{"id": "mc-04", "point": "memory_collision", "input": {"new": "La multa fue de 500.000 pesos.", "stored": "Tras la apelacion la multa quedo en 200.000 pesos.", "newer": false}, "expected": "keep_both"}
+{"id": "mc-05", "point": "memory_collision", "input": {"new": "312 de las viviendas presentan dano estructural severo.", "stored": "El censo preliminar registra 1.240 viviendas con danos.", "newer": null}, "expected": "keep_both"}
+{"id": "mc-06", "point": "memory_collision", "input": {"new": "El director de la sociedad dimitio en 2022.", "stored": "La sociedad esta registrada en Panama desde 2011.", "newer": null}, "expected": "keep_both"}
+{"id": "mc-07", "point": "memory_collision", "input": {"new": "TC/1148/25 anulo los articulos 34, 35 y 36.", "stored": "La sentencia TC/1148/25 declaro inconstitucionales los articulos 34, 35 y 36 de la Ley 6132.", "newer": null}, "expected": "duplicate"}
+{"id": "mc-08", "point": "memory_collision", "input": {"new": "Segun el boletin oficial de Proteccion Civil son 1.240 las viviendas con danos.", "stored": "Un diario local cifra en 1.240 las viviendas con danos.", "newer": true}, "expected": "keep_both"}
+{"id": "mc-09", "point": "memory_collision", "input": {"new": "El SGC situa el hipocentro a 103 km de profundidad.", "stored": "El sismo tuvo una profundidad de 110 km.", "newer": true}, "expected": "replace"}
+{"id": "mc-10", "point": "memory_collision", "input": {"new": "El SGC situa el hipocentro a 103 km de profundidad.", "stored": "El sismo tuvo una profundidad de 110 km.", "newer": null}, "expected": "flag"}
+{"id": "mc-11", "point": "memory_collision", "input": {"new": "El recurso fue rechazado.", "stored": "El tribunal admitio el recurso a tramite.", "newer": true}, "expected": "replace"}
+{"id": "mc-12", "point": "memory_collision", "input": {"new": "La audiencia se celebro el 7 de noviembre de 2025.", "stored": "La sentencia se dicto el 18 de noviembre de 2025.", "newer": null}, "expected": "keep_both"}
+{"id": "mc-13", "point": "memory_collision", "input": {"new": "Mario Reyes es el socio unico de Inversiones Delta.", "stored": "Inversiones Delta pertenece a Mario Reyes.", "newer": null}, "expected": "keep_both", "relabelled": "2026-09-24, see the header"}
+{"id": "mc-14", "point": "memory_collision", "input": {"new": "Inversiones Delta cambio de domicilio social a Ciudad de Panama en 2019.", "stored": "Inversiones Delta figura registrada en Panama desde 2011.", "newer": true}, "expected": "keep_both"}
+{"id": "mc-15", "point": "memory_collision", "input": {"new": "El expediente esta archivado desde marzo de 2024.", "stored": "El expediente sigue abierto en instruccion.", "newer": true}, "expected": "replace"}
+{"id": "mc-16", "point": "memory_collision", "input": {"new": "De las 1.240 viviendas danadas, 312 tienen dano estructural severo y 928 dano leve.", "stored": "El censo preliminar registra 1.240 viviendas con danos, de las cuales 312 presentan dano estructural severo.", "newer": true}, "expected": "keep_both"}
+{"id": "rc-01", "point": "recall", "input": {"turn": "Sigue con la empresa que estabamos mirando."}, "expected": "look"}
+{"id": "rc-02", "point": "recall", "input": {"turn": "Que decidimos al final sobre el caso de 2019?"}, "expected": "look"}
+{"id": "rc-03", "point": "recall", "input": {"turn": "Redactalo en el formato que quiere el cliente."}, "expected": "look"}
+{"id": "rc-04", "point": "recall", "input": {"turn": "Anade esa cifra al apartado de danos del informe."}, "expected": "look"}
+{"id": "rc-05", "point": "recall", "input": {"turn": "Por que descartamos aquella sentencia?"}, "expected": "look"}
+{"id": "rc-06", "point": "recall", "input": {"turn": "Continua donde lo dejamos ayer."}, "expected": "look"}
+{"id": "rc-07", "point": "recall", "input": {"turn": "Busca mas sobre el segundo de los socios.", "topics": "Inversiones Delta: socios, domicilio, sentencias relacionadas"}, "expected": "look"}
+{"id": "rc-08", "point": "recall", "input": {"turn": "Traduce este parrafo al ingles: La Coordinacion Estatal informo que el censo preliminar registra 1.240 viviendas con danos."}, "expected": "skip"}
+{"id": "rc-09", "point": "recall", "input": {"turn": "Cuanto es el 15 % de 4.200?"}, "expected": "skip"}
+{"id": "rc-10", "point": "recall", "input": {"turn": "Resume en tres frases el documento que acabo de pegar."}, "expected": "skip"}
+{"id": "rc-11", "point": "recall", "input": {"turn": "Pon esta lista en orden alfabetico: Reyes, Alvarez, Pena, Castillo."}, "expected": "skip"}
+{"id": "rc-12", "point": "recall", "input": {"turn": "Escribe una funcion de Python que valide una direccion de correo electronico."}, "expected": "skip"}
+{"id": "rc-13", "point": "recall", "input": {"turn": "Convierte estas fechas al formato ISO: 7 de noviembre de 2025, 18 de noviembre de 2025."}, "expected": "skip"}
+{"id": "rc-14", "point": "recall", "input": {"turn": "Explicame que es una accion de amparo, en general."}, "expected": "skip"}
