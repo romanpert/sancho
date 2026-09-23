@@ -17,10 +17,13 @@ It cannot self-confirm because it cannot write. It returns calibrated probabilit
 can abstain or fall back to a default when confidence is low.
 
 ```
-pip install sancho[jev]          # TypeSafe Jev over HTTP
-pip install sancho[mcp]          # expose the decision points as MCP tools
-pip install sancho               # core only: recorded, null, local and LLM providers
+pip install sancho-ai[jev]       # TypeSafe Jev over HTTP
+pip install sancho-ai[mcp]       # expose the decision points as MCP tools
+pip install sancho-ai            # core only: recorded, null, local and LLM providers
 ```
+
+The distribution is `sancho-ai` because `sancho` was taken on PyPI by an unrelated 2014
+test framework. The import name is `sancho`, as everywhere in these docs.
 
 ## What it does, measured
 

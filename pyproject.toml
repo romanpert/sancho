@@ -3,7 +3,7 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sancho"
+name = "sancho-ai"          # el nombre `sancho` estaba cogido en PyPI; se importa como `sancho`
 version = "0.1.0"
 description = "A calibrated, non-generative decision layer (a squire) for LLM agent harnesses."
 readme = "README.md"
