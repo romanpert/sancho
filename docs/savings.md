@@ -33,10 +33,30 @@ had to write:
 | claude-haiku-4-5 | 0.1549 USD | 24x |
 | Jev 1.13 | 0.0065 USD | 1x |
 
-Those multiples are a floor. A generative model also pays for the tokens it writes, and a
-measured comparison on 156 of these cases against Claude Haiku 4.5 with tool-forced output
-came out at **49x** (0.0048 against 0.2337 USD) with three times the latency. See the paper,
-Section 5.6.
+Those multiples are a floor in one direction and a ceiling in another, and the second half
+of that sentence was missing from the first version of this page.
+
+They are a floor because a generative model also pays for the tokens it writes: a measured
+comparison on 156 of these cases against Claude Haiku 4.5 with tool-forced output came out
+at **49x** (0.0048 against 0.2337 USD) with three times the latency (paper, Section 5.6).
+
+They are a ceiling because inside a warm agent loop the tokens being compared are not priced
+at the list rate. A cached read costs **0.1x** base input, a five-minute cache write 1.25x
+([Anthropic, prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)).
+So the honest competitor to this decider, for tokens that are already in a cached prefix, is:
+
+| Priced as a cache read | USD/MTok | Multiple over the decider |
+|---|---|---|
+| claude-opus-5 | 0.50 | 11.9x |
+| claude-sonnet-5 | 0.20 | 4.8x |
+| claude-haiku-4-5 | 0.10 | 2.4x |
+
+**Which multiple applies depends on what the decision is for.** If it *replaces* a call the
+big model was going to make, that call pays list price for its own output and a cache write
+for its own prefix, and the 48x-to-119x column is the right one. If it *keeps tokens out of
+a prefix that is already warm*, the 4.8x-to-11.9x column is. Most of the disappointment in
+the end-to-end A/B lives in that distinction; `docs/where-it-pays.md` is the argument in
+full.
 
 ## Measured: what page triage keeps out
 
@@ -139,6 +159,22 @@ not a result.
 **What to quote, then.** The cost per decision and the break-even, which are measured. The
 safety and quality numbers in the paper, which are measured. Not a saving percentage: we
 looked for one in our own agent, twice, and it was not there.
+
+## The one saving percentage in this repository, and it is about wiring
+
+There is exactly one end-to-end percentage we are willing to quote, and it is not about page
+triage. Narrowing a 58-tool catalog to 28 tools **once, before the first request of a
+session**, cost 0.07916 USD against 0.13873 for the full catalog over 8 turns on
+claude-sonnet-5: **43 % cheaper**, measured, `benchmarks/cache/`.
+
+The same narrowing applied on alternate turns costs 0.15770, which is 14 % *more* than never
+narrowing, and applied afresh every turn it costs 0.32864, which is 4.15x the arm that
+decided once and reads **zero** tokens from cache across the entire conversation. Tool
+definitions are the front of the prompt prefix; rewriting them invalidates the tools, system
+and message caches together.
+
+So the percentage belongs to the wiring, not to the model: the same decision, taken at the
+right moment, saves 43 %, and taken every turn, costs three times what it saves.
 
 **What the A/B was worth anyway.** It found a real bug. Triage was judging a 10,000-character
 document on its first 1,500 characters, deciding the preamble did not address the purpose and

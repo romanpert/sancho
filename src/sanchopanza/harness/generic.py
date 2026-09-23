@@ -56,6 +56,13 @@ class HarnessConfig:
     review_delegations: bool = True
     search_tools: frozenset[str] = frozenset({"WebSearch"})
     search_query_key: str = "query"
+    # **Probe the capability; do not declare it.** This callable decides whether the squire
+    # is allowed to route a query away from the model's own search, so it answers "does that
+    # alternative exist and work, right now". A constant `True`, or a function that answers a
+    # different question (is there quota left, is the feature flag on), sends work into a
+    # hole: the routing succeeds, nothing fails, fail-open never fires, and the job comes
+    # back empty and cheap. That has happened in production, and the arm that produced
+    # nothing was 75 % cheaper. See docs/where-it-pays.md, section 5.
     cheap_search_available: Callable[[], bool] = lambda: False
     cheap_search_hint: str = (
         "Use the cheap search tool for this query; keep the model's search for what it cannot find."

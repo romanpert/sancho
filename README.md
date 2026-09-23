@@ -89,7 +89,27 @@ as it did before. That is the point: **the squire can only improve an agent, nev
 | `same_entity` | Whether two mentions are the same real-world entity | **24/24** |
 | `relate_facts` | agree / conflict / unrelated | 16/20, not yet integrated |
 | `classify` | Free text into a closed vocabulary, with abstention | **80-85 %** against independent labels; majority baseline 43-62 % |
-| `select_tools` | Which groups of a large tool catalog a request needs | not yet measured |
+| `select_tools` | Which groups of a large tool catalog a request needs | accuracy not yet measured; **the wiring is**, and it is the one that can cost you money: [read this first](benchmarks/cache/results/summary.md) |
+
+Added in 0.2.0, first run measured on 124 new cases
+([results](docs/results/2026-09-24-new-points/summary.md)):
+
+| Method | Decides | Measured |
+|---|---|---|
+| `check_loop` | Whether the goal is already met, or a check repeats one already run | **14/14** and **12/12**, AUC 1.00. Attacks the largest measured waste in an agent loop: 18x the clean-run cost, no success gain |
+| `remember` | Whether a fact is worth writing to long-term memory | 16/16 at a 0.5 cut, 12/16 under the shipped thresholds, AUC 1.00 |
+| `reconcile` | Whether a new fact contradicts, duplicates or complements a stored one | **14/16**; recency stays in code, because dates are the model's declared weakness |
+| `needs_recall` | Whether a turn needs a memory lookup at all | **14/14**, AUC 1.00, ECE 0.051 |
+| `gate_extraction` | Whether a chunk is worth a generative extraction call | **15/16**, AUC 1.00 |
+| `verify_edge` | Whether the text states a proposed triple, in that direction | 15/17 when deciding; **8 edges committed, 0 of them wrong** |
+| `triage_redundant` | Whether a page repeats what the agent already holds | 15/16 at a 0.5 cut, 11/16 under the shipped thresholds, AUC 1.00 |
+
+> **What that run actually found, and we did not tune it away.** Across the six binary
+> points the model is right **86 times out of 88** at a plain 0.5 cut and **78 out of 88**
+> under the thresholds this package ships, with **AUC 1.00 on every one**. The ordering is
+> perfect; the thresholds are too strict. All eight lost decisions are refusals to act, so
+> the layer is safe as shipped and leaving money on the table. Moving a threshold needs 50
+> cases and a second annotator per point, and this bench has 12 to 20 and one annotator.
 
 Full method, intervals and caveats: [the paper](docs/paper.md). Benches and how to run them:
 [docs/benches.md](docs/benches.md).
@@ -108,7 +128,9 @@ Full method, intervals and caveats: [the paper](docs/paper.md). Benches and how 
 |---|---|
 | One decision | **29 millionths of a dollar**, output included, because this model's output is free |
 | The same tokens on Claude Sonnet 5, input only | **48x** more |
+| The same tokens as a Sonnet 5 **cache read** (0.1x input) | **4.8x** more, and this is the honest comparison inside a warm loop |
 | Measured against Claude Haiku 4.5, tool-forced, same cases | **49x cheaper, 3x faster**, comparable accuracy |
+| Against a hosted evaluation meter (Azure, Vertex legacy), per 1,000 judgments | 0.029 USD against about 42 USD: **~1,450x** |
 
 **There is no headline saving percentage on this page, and that is deliberate.** We ran the
 end-to-end A/B ([benchmarks/ab](benchmarks/ab)) instead of guessing. Across 64 paired runs,
@@ -121,6 +143,24 @@ So: **add Sanchopanza for the safety and quality decisions, which are measured, 
 bill, which we could not demonstrate in our own agent.** The break-even arithmetic and the
 fetch-heavy experiment that would settle the cost question are in
 [docs/savings.md](docs/savings.md) and [benchmarks/](benchmarks/).
+
+**Where it does pay, and why the A/B could not see it.** A cheap decision pays reliably when
+it *replaces* a call some model was going to make anyway (verify this citation, match this
+pair, check this triple, screen this page), because then the saving is a price ratio and not
+a bet on the workload's shape. It pays unreliably when it tries to keep tokens out of a
+context, which is what our A/B measured. And it pays a third way that is not a saving at
+all: at 29 millionths a decision, checks that were too expensive to run on everything become
+cheap enough to run on everything. The full argument, the catalog of levers ranked by how
+sure we are, and the four things you should *not* use a decision model for, are in
+**[docs/where-it-pays.md](docs/where-it-pays.md)**.
+
+**And one way to lose money with it.** Tool definitions sit at the front of the prompt
+prefix, so rewriting them invalidates the tools, system and message caches at once. Measured
+over 8 turns on Claude Sonnet 5: narrowing the catalog **once** is 43 % cheaper than not
+narrowing, narrowing it on alternate turns is 14 % *dearer* than not narrowing, and a
+selector that picks a different subset every turn reads **nothing** from cache and costs
+4.15x the one that decided once ([benchmarks/cache](benchmarks/cache/results/summary.md)).
+Same decision, different moment, opposite sign.
 
 ---
 
@@ -159,7 +199,7 @@ flowchart LR
 | `sanchopanza.providers` | `jev`, `recorded`, `null`, `llm`, `local`, plus `FallbackDecider` and `RoutedDecider` |
 | `sanchopanza.eval` | Bench runner and statistics, in plain Python: Wilson, bootstrap, McNemar, AUC, Brier, ECE |
 
-### Three invariants
+### Four invariants
 
 1. **Fail open.** No provider, no key, exhausted budget, provider bug: every policy returns
    the default the harness had before. `Squire.decide` never raises.
@@ -168,6 +208,11 @@ flowchart LR
    enters. Emit a citation verdict at 0.80, else abstain. The guard denies, never approves.
 3. **Trace.** One journal event per decision, with probabilities, confidence, cost, latency
    and outcome. Audit trail first, labelled dataset later.
+4. **Cache-safe by construction.** A decision acts only where acting cannot invalidate a
+   cached prefix: before the first request of a session, on content about to be appended, or
+   inside a tool the agent called anyway. Never by rewriting `tools`, `system` or history
+   mid-session. This one is measured, not assumed: getting it wrong costs 4.15x
+   ([benchmarks/cache](benchmarks/cache/results/summary.md)).
 
 More: [docs/architecture.md](docs/architecture.md).
 
@@ -194,7 +239,10 @@ from sanchopanza.harness.claude_agent_sdk import hook_matchers
 
 guardian = Guardian(squire, HarnessConfig(
     tiers={"light": "researcher-light", "default": "researcher", "deep": "researcher-deep"},
-    cheap_search_available=lambda: True,
+    # A probe, never a constant: it answers "does that engine exist and answer, right now".
+    # A flag that is always true routes work into a hole, and nothing fails. See
+    # docs/where-it-pays.md, section 5.
+    cheap_search_available=search_engine.reachable,
 ))
 options = ClaudeAgentOptions(hooks=hook_matchers(guardian), ...)
 ```
@@ -283,6 +331,11 @@ fixed before the runs that measured them and have not been tuned on the results.
 - **Not an explainer.** The audit trail is probabilities, not prose.
 - **Not a silver bullet for cost.** See the A/B. It pays when documents are large or
   retrieval is noisy, and it costs latency always.
+- **Not a competitor to your harness's own tool search.** Anthropic's appends schemas instead
+  of swapping them, so it keeps the cache; ours would have to rewrite `tools`. Where a tool
+  search exists, use it, and keep the squire for decisions it does not make.
+- **Not a substitute for a probe.** It chooses between the options you tell it exist. If one
+  of them does not, it will route work into the hole confidently, and nothing will fail.
 
 ---
 
@@ -290,12 +343,15 @@ fixed before the runs that measured them and have not been tuned on the results.
 
 ```
 src/sanchopanza/       the package
-benches/               public benches: core 74, safety 106, graph 64 + one plan
-fixtures/              a recorded real run, so tests and CI cost nothing
+benches/               public benches: core 74, safety 106, graph 64 + one plan,
+                       and 124 more for memory, graph building, redundancy and the loop
+fixtures/              two recorded real runs, so tests and CI cost nothing
 benchmarks/ab/         the end-to-end A/B: corpus, tasks, runner, results
+benchmarks/cache/      what narrowing a tool catalog costs, per turn against once
 skills/sanchopanza/    a skill for coding agents that wire this in
 docs/paper.md          the working paper
 docs/savings.md        what it costs, and the break-even arithmetic
+docs/where-it-pays.md  which decisions are worth taking, ranked by how sure we are
 docs/architecture.md   diagrams and the invariants
 docs/adapters.md       one section per harness
 docs/providers.md      how to write a provider

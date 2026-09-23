@@ -1,0 +1,82 @@
+[
+ {
+  "nombre": "static",
+  "turnos": 8,
+  "entrada_sin_cache": 5511,
+  "lectura_cache": 201957,
+  "escritura_cache": 28851,
+  "salida": 1519,
+  "segundos": 27.11409091949463,
+  "herramientas_por_turno": [
+   58,
+   58,
+   58,
+   58,
+   58,
+   58,
+   58,
+   58
+  ],
+  "coste_usd": 0.1387309
+ },
+ {
+  "nombre": "once",
+  "turnos": 8,
+  "entrada_sin_cache": 4741,
+  "lectura_cache": 98567,
+  "escritura_cache": 14081,
+  "salida": 1476,
+  "segundos": 24.42253613471985,
+  "herramientas_por_turno": [
+   28,
+   28,
+   28,
+   28,
+   28,
+   28,
+   28,
+   28
+  ],
+  "coste_usd": 0.07915789999999999
+ },
+ {
+  "nombre": "reselect",
+  "turnos": 8,
+  "entrada_sin_cache": 4844,
+  "lectura_cache": 129312,
+  "escritura_cache": 43104,
+  "salida": 1439,
+  "segundos": 25.95837092399597,
+  "herramientas_por_turno": [
+   28,
+   58,
+   28,
+   58,
+   28,
+   58,
+   28,
+   58
+  ],
+  "coste_usd": 0.1577004
+ },
+ {
+  "nombre": "churn",
+  "turnos": 8,
+  "entrada_sin_cache": 7071,
+  "lectura_cache": 0,
+  "escritura_cache": 117148,
+  "salida": 2163,
+  "segundos": 32.586217164993286,
+  "herramientas_por_turno": [
+   30,
+   29,
+   29,
+   30,
+   28,
+   29,
+   29,
+   28
+  ],
+  "coste_usd": 0.328642
+ }
+]

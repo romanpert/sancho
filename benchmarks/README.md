@@ -7,9 +7,24 @@ numbers about decision layers.
 |---|---|---|
 | Does the squire decide correctly? | `../benches/` plus `sanchopanza bench` | Decision-level accuracy, calibration, coverage. Replays for free from a recorded fixture. |
 | Does the agent get cheaper or worse? | `ab/` | End-to-end cost, latency and answer quality, with and without the squire. Spends real money. |
+| Where may a decision be *applied*? | `cache/` | What narrowing a tool catalog costs when it is done once, on alternate turns, or afresh every turn. Spends real money. |
 
 Decision-level accuracy does not answer the second question and must not be quoted as if it
 did. A decision can be right and change nothing about what the job costs.
+
+## The cache arms
+
+```
+python benchmarks/cache/run.py --dry          # the token arithmetic, free
+python benchmarks/cache/run.py --turns 8      # four arms, about 0.70 USD
+```
+
+The shortest answer in this directory, and the only end-to-end percentage this repository is
+willing to quote. Narrowing a 58-tool catalog **once** is 43 % cheaper than not narrowing it;
+narrowing it on alternate turns is 14 % *dearer* than not narrowing it; narrowing it afresh
+every turn reads **zero** tokens from cache across eight turns and costs 4.15x the arm that
+decided once. Results, caveats and the account of how the first run of this benchmark
+produced a flattering lie: `cache/results/summary.md`.
 
 ## The A/B
 
@@ -17,6 +32,9 @@ did. A decision can be right and change nothing about what the job costs.
 python benchmarks/ab/run.py --verify                       # ground truth check, free
 python benchmarks/ab/run.py --repeats 1 --tasks dag        # a pilot, a few cents
 python benchmarks/ab/run.py --retrieval noisy --doc-size large --repeats 3
+
+# the fetch-heavy condition, which the null result of 2026-09-24 could not exercise
+python benchmarks/ab/run.py --retrieval scattered --lever redundancy     --tasks spread-adapters,spread-costs --repeats 3
 ```
 
 Needs `ANTHROPIC_API_KEY` and `TYPESAFE_API_KEY`, and `pip install anthropic`.
@@ -64,10 +82,20 @@ to two documents per task and triage dropped a fraction of one. Enlarging the do
 not help, because in this corpus size and retrieval difficulty are coupled, so the larger the
 documents the easier it is to find the right one and the less there is to keep out.
 
-The experiment that would still settle the cost question is a fetch-heavy one, a task that
-gathers twenty to forty sources before writing, over a corpus where most of what retrieval
-returns is off-target. That is not this benchmark, and the prediction in `../docs/savings.md`
-should be read as being about that workload.
+The experiment that would still settle the cost question is a fetch-heavy one: a task that
+gathers many sources before writing, over a corpus where most of what retrieval returns is
+off-target. **That condition now exists here and has not been run.** `--retrieval scattered`
+widens the result list to 16 and tells the agent the answer is spread across documents;
+`--lever redundancy` passes each fetched page through `Squire.triage_redundant` against a
+digest of what the agent already kept; and the two `spread-*` tasks carry `pins` instead of
+`pin`, several strings each appearing in exactly one document and all in different documents,
+so they cannot be answered without retrieving every one of them. The corpus supplies the
+redundancy honestly rather than by construction: after draft 3 of the paper, the cache result
+is stated in six of its documents.
+
+The prediction, recorded before the run so that it can be wrong: a real effect on input
+tokens, a smaller one on total cost, latency still worse, and quality unchanged. Estimated
+spend for three repetitions of both tasks in both arms, at Sonnet 5 prices: 5 to 10 USD.
 
 The second is a bug this benchmark caught in the library itself. Triage judged a
 10,000-character document on its first 1,500 characters, decided the preamble did not address

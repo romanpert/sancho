@@ -27,11 +27,32 @@ It is **not** worth it when:
   vulnerable to instructions injected into its state. It may add a denial; it must never
   grant permission.
 - The answer has to be explained in prose. The audit trail here is probabilities.
+- **The harness already has a better mechanism.** If it offers a server-side tool search, use
+  that instead of `select_tools`: it appends schemas rather than swapping them, so it keeps
+  the prompt cache, and it is not metered.
+- **The thing you would be filtering is mostly noise.** Below roughly 17 % precision in
+  whatever proposes the candidates, a filter adds nothing measurable. Measure the generator
+  before you build the filter.
 
-Cost check before you build: one decision is about 29 millionths of a dollar. Compare that
-with what it keeps out. A fetched page pays for its own triage above roughly 60 tokens on a
+**Ask where it will act before you ask how accurate it is.** A decision is worth what its
+attachment point lets it be worth. Measured in this repository: narrowing a tool catalog once
+per session is 43 % cheaper, and the same narrowing done afresh every turn costs 4.15x,
+because rewriting `tools` invalidates the whole prompt cache. Outside it: Meta moved the same
+static analysis, with the same false-positive rate, from batch to diff time and its fix rate
+went from near zero to over 70 %.
+
+Cost check before you build: one decision is about 29 millionths of a dollar, and there are
+three different ways that can be worth something. It **substitutes** for a call some model
+was going to make anyway (verify this citation, match this pair, check this triple): the
+saving is a price ratio, 24x to 119x by list price, and it is the only one of the three whose
+arithmetic is safe. It **avoids** tokens entering a context: worth less than it looks,
+because inside a warm loop those tokens are priced at the cache-read rate of 0.1x, so the
+multiple is 4.8x on a Sonnet-class model, not 48x. Or it makes a check **affordable** that
+was previously skipped, which is a quality result and should never be reported as a saving.
+
+Break-evens, measured: a fetched page pays for its own triage above roughly 60 tokens on a
 Sonnet-class orchestrator; a delegated subtask pays for its own routing above roughly 75.
-Both break-evens are measured; see `docs/savings.md` in the repository.
+See `docs/savings.md` and `docs/where-it-pays.md` in the repository.
 
 ## 2. Pick the decision point
 
@@ -46,7 +67,14 @@ Both break-evens are measured; see `docs/savings.md` in the repository.
 | Add a denial on a dangerous shell command | `guard_command` | 29/32 alone; 31/32 with the code deny-list, zero false positives |
 | Decide whether two mentions are the same entity | `same_entity` | 24/24 |
 | Put free text into a closed vocabulary | `classify` | 80-85 % against independent labels, majority baseline 43-62 % |
-| Narrow a large tool catalog before a model call | `select_tools` | not yet measured |
+| Narrow a large tool catalog, **once per session** | `select_tools` | accuracy not measured; the wiring is, and doing it per turn costs 4.15x |
+| Stop a loop that has already finished, or a check that repeats one | `check_loop` | 14/14 and 12/12, AUC 1.00 |
+| Decide whether a fact is worth writing to long-term memory | `remember` | 16/16 at a 0.5 cut, 12/16 under shipped thresholds |
+| Reconcile a new fact against a stored one | `reconcile` | 14/16; recency comes from your timestamps, never from the model |
+| Skip a memory lookup a turn does not need | `needs_recall` | 14/14, AUC 1.00 |
+| Skip a generative extraction call on a chunk with nothing in it | `gate_extraction` | 15/16, AUC 1.00 |
+| Check a proposed triple before it enters a graph | `verify_edge` | 8 committed, 0 wrong, on 20 cases |
+| Drop a source that repeats what you already have | `triage_redundant` | 15/16 at a 0.5 cut, 11/16 under shipped thresholds |
 
 ## 3. Wire it in
 
@@ -73,7 +101,7 @@ guardian = Guardian(squire, HarnessConfig(tiers={"light": "...", "deep": "..."})
 - **Anything else**: `await guardian.before_tool(ToolCall(name, args))` returns allow, deny
   with a reason, or rewrite with new arguments. Map those three to your harness.
 
-## 4. Respect the three invariants, or do not bother
+## 4. Respect the four invariants, or do not bother
 
 **Fail open.** No provider, no key, exhausted budget, provider bug: every policy returns the
 default the harness had before. `Squire.decide` never raises. If you wrap it in something
@@ -86,6 +114,31 @@ deny, never approve.
 
 **Trace.** One journal event per decision, with probabilities, confidence, cost, latency and
 the outcome. It is the audit trail, and later it is the labelled dataset you tune on.
+
+**Cache-safe.** Act only where acting cannot invalidate a cached prompt prefix. The prefix
+renders as `tools -> system -> messages` and a change at any level invalidates that level and
+everything after it, so:
+
+| Safe to act | Never |
+|---|---|
+| Before the first request of a session | Rewriting `tools` mid-session |
+| On content about to be appended (a page, a search result, a subagent's prompt) | Editing the system prompt mid-session |
+| Inside a tool the model called anyway | Deleting or rewriting earlier turns |
+| On a delegation, choosing the subagent's model | Switching the model of a running conversation |
+| As an appended note (`additionalContext`) | |
+
+If a harness genuinely needs the tool set to change mid-session, use the channels that append
+rather than swap: tool search, or `tool_addition` / `tool_removal` blocks with
+`defer_loading`. Verify it worked by watching `cache_read_input_tokens`: a zero across
+repeated requests means something is rewriting the prefix.
+
+**And a fifth thing that is not an invariant but will cost you more than all of them.**
+The squire chooses among the options you tell it exist. If one of those options is not
+actually deployed, it will route work into the hole confidently, nothing will fail, and
+fail-open will never fire. `cheap_search_available` must be a probe that answers "does this
+engine exist and answer, right now", never a constant and never a quota check. In production
+that mistake produced a report beginning "this research could not be carried out", 75 %
+cheaper than delivering one.
 
 ## 5. Write the question properly
 

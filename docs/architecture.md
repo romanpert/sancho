@@ -110,6 +110,33 @@ thresholds later. Sample it, re-label it, compare.
 
 **Budget.** Decisions and dollars per job. At the cap, defaults and one warning.
 
+**Cache-safe by construction.** This invariant was added in 0.2.0 after measuring what its
+absence costs. Anthropic's prompt cache matches on a prefix rendered in the order
+`tools -> system -> messages`, and a change at any level invalidates that level and every
+one after it. So a decision that *acts* by rewriting the tool array, editing the system
+prompt or rewriting earlier turns does not merely fail to save: it turns every cached read
+left in the conversation into a fresh write at 1.25x.
+
+The squire therefore acts only at points where there is no prefix to invalidate:
+
+| Where it acts | Why that is safe |
+|---|---|
+| Before the first request of a session (tool catalog, tiers) | There is no prefix yet |
+| On content about to be appended (a fetched page, a search result, a subagent's prompt) | Appending is what the conversation does anyway |
+| Inside a tool the agent called (citation, entities, classification, edges) | The tool's result is one more appended block |
+| On a *delegation*, choosing the subagent's model | A subagent does not read the parent's cache in any case |
+| As a note, through `additionalContext` | A note is appended, not spliced |
+
+And never by mutating `tools`, `system` or history mid-session. Measured over 8 turns on
+claude-sonnet-5 (`benchmarks/cache/`): narrowing a 58-tool catalog once is 43 % cheaper than
+not narrowing; narrowing it on alternate turns is 14 % *dearer* than not narrowing; and
+picking a different subset every turn reads **zero** tokens from cache across the whole
+conversation and costs 4.15x the arm that decided once.
+
+The general form of the rule is not ours. Meta reported that moving the same static analysis,
+with the same false-positive rate, from batch to diff time took its fix rate from near zero
+to over 70 % (CACM 62(8), 2019). Where a decision lands matters more than how good it is.
+
 ## Where the squire does not go
 
 - Arithmetic, dates, magnitude comparisons: the model class reads numbers as text.

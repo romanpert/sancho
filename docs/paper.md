@@ -1,10 +1,19 @@
 # Sancho: A Calibrated, Non-Generative Evaluator for LLM Agent Harnesses
 
-**Working paper, draft 2 · 2026-09-21**
+**Working paper, draft 3 · 2026-09-24**
 Status: preliminary results on small benchmarks, mostly single-annotator. Written to be
 checked, not believed. Every number is recomputable: the private runs from the result files
 described in Appendix A, the public run from `benches/`, `fixtures/public-benches.jsonl` and
 `docs/results/2026-09-21-public/` in this repository, with `sanchopanza.eval.stats`.
+
+Draft 3 adds four things and removes no claim: eight further decision points for agent
+memory, knowledge-graph construction, source redundancy and loop control, measured on 124
+new cases (Section 5.10); an end-to-end experiment on where a decision may be *applied*
+without invalidating a prompt cache, which is the first place this layer can lose money
+rather than save it (Section 5.11); a revised account in Section 6 of which decisions are
+worth taking at all, after our own end-to-end A/B on page triage returned null twice; and a
+negative result about our own thresholds, which we report and deliberately do not fix
+(Section 5.10).
 
 ---
 
@@ -194,6 +203,13 @@ into a schema built from the questions; a local provider wraps arbitrary callabl
 | G1 | Entity alignment | tool | same real-world entity (truth) | outside [0.25, 0.75] -> same / different; inside -> not sure |
 | G2 | Fact relation | tool (not yet in production) | agree / conflict / unrelated (choice) | confidence >= 0.60 else abstain |
 | G4 | Closed-vocabulary classification | tool | one category or `other` (choice) | probability >= 0.60 and not `other`, else null |
+| G5 | Extraction gate | tool, before a generative extraction pass | chunk contains an instance of the schema (truth) | skip the extraction call only at p <= 0.25 and confidence >= 0.75; else extract |
+| G6 | Edge check | tool, after extraction | text states the triple (truth); in that direction (truth) | mentions matched in code first; commit at confidence >= 0.80 in the stated direction; else review |
+| M1 | Memory write | tool, on a candidate fact | durable (truth); specific (truth); re-readable from a source (truth) | store only if durable and specific >= 0.70 and re-readable <= 0.75 |
+| M2 | Memory collision | tool, candidate against stored | contradicts (truth); adds nothing (truth) | duplicate at adds-nothing >= 0.75; on a contradiction, replace/keep by the harness's timestamps, and flag when it has none |
+| M3 | Recall gate | before a memory lookup | the turn needs something learned earlier (truth) | skip the lookup only at p <= 0.25 and confidence >= 0.75 |
+| D3b | Source redundancy | inside the fetch tool, against a digest of what is held | adds nothing new for this purpose (truth) | drop at p >= 0.80 and confidence >= 0.75; in doubt the page enters |
+| D8 | Loop guard | PostToolUse; appends context | goal already met (truth); the pending check repeats one already run (truth) | speaks only at >= 0.70; advises, never denies |
 
 ### 3.4 Invariants
 
@@ -210,6 +226,12 @@ confidence, cost, latency and the policy outcome: the audit trail and the labell
 thresholds are later tuned on.
 
 *Budget.* Own per-task cap on calls and dollars; at the cap, defaults and one warning.
+
+*Cache-safe by construction.* A decision acts only where acting cannot invalidate a cached
+prompt prefix: before the first request of a session, on content that is about to be
+appended, inside a tool the agent called anyway, or on a delegation whose subagent does not
+share the parent's prefix. Never by rewriting the tool array, the system prompt or earlier
+turns. Section 5.11 measures what the absence of this invariant costs, which is 4.15x.
 
 *Code before model.* Literal quote match, token-overlap repetition, deny-list regexes and
 transitive reduction run first, deterministically and for free.
@@ -471,9 +493,177 @@ commands, and the model passed all 15 benign ones. Pseudonyms did not change any
 questions depend on, which is itself a small check that the decisions are about the text and
 not about who is named.
 
+### 5.10 Eight further points: memory, graph construction, redundancy, loop control
+
+Draft 3 adds eight decision points, chosen because the judgment each one makes is already
+being made somewhere by a generative model: a memory pipeline runs an extraction call on
+every turn and an ADD/UPDATE/DELETE/NOOP call per candidate fact [Mem0, 2025]; a
+GraphRAG-style index sends every chunk to a model to have entities pulled out of it, and
+every candidate pair to have duplicates merged [LazyGraphRAG, 2024]; and an agent loop, left
+alone, re-verifies work it has already finished, at a measured 18x the cost of a clean run
+with no improvement in success [Weinberger and Hozez, 2026].
+
+124 hand-labelled cases, one annotator, authored 2026-09-24; 122 decision calls, 84,092
+input tokens, **0.0035 USD**, that is 28.9 millionths per decision, reproducing Section 5.9's
+figure on a different distribution. Replays for free from `fixtures/new-points.jsonl`.
+
+| Point | n | Coverage | Agreement under the policy | Correct at a plain 0.5 cut | AUC | Brier | ECE |
+|---|---|---|---|---|---|---|---|
+| Goal met (D8) | 14 | 100 % | 14/14 | 14/14 | 1.00 | 0.037 | 0.131 |
+| Repeated check (D8) | 12 | 100 % | 12/12 | 12/12 | 1.00 | 0.017 | 0.112 |
+| Recall gate (M3) | 14 | 100 % | 14/14 | 14/14 | 1.00 | 0.003 | 0.051 |
+| Extraction gate (G5) | 16 | 100 % | 15/16 | 15/16 | 1.00 | 0.030 | 0.101 |
+| Memory collision (M2) | 16 | 100 % | 14/16 | | | | |
+| Edge check (G6) | 20 | 85 % | 15/17 | | | | |
+| Memory write (M1) | 16 | 100 % | 12/16 | **16/16** | 1.00 | 0.073 | 0.224 |
+| Source redundancy (D3b) | 16 | 100 % | 11/16 | **15/16** | 1.00 | 0.039 | 0.121 |
+
+**The central result of Section 5.8 replicates on points it was not derived from.** At
+confidence >= 0.75 the new points are right 92 times out of 94; below it, 15 of 27.
+
+**The finding we did not fix.** Over the six binary points the evaluator is right **86 of 88**
+at a plain 0.5 cut and **78 of 88** under the thresholds the package ships, with **AUC 1.00
+on every one of the six**. No error on these points is an ordering error, and all eight lost
+decisions are refusals to act, caused by thresholds calibrated for other points on a Truth
+primitive that Section 5.8 had already shown to be under-confident (ECE 0.14). The thresholds
+were not moved. The rule is 50 cases and a second annotator per point, and this bench has 12
+to 20 and one annotator; a threshold tuned on the run that revealed it is a threshold tuned
+on noise. Google's deployed equivalent shows what earning the change looks like: a
+probability threshold set per language to a *target precision* and reported as recall@X,
+lowered from 70 % to 50 % and then to 40 % once a human preview step existed, each step
+buying recall without a loss in satisfaction [Frommgen et al., 2024].
+
+**Per-point notes, including two limitations and one confident error.**
+
+*Edge check (G6).* The metric that matters for a graph is not agreement but whether a wrong
+edge is ever committed, because a wrong edge is believed by everything downstream. Of 20
+triples, 8 were committed and **none was wrong**; 3 went to review; 9 were rejected. One
+rejection is a genuine and *confident* error: a triple stating that a ruling annuls an
+article was rejected at confidence 1.00, where the text says the ruling declares that article
+unconstitutional among two others. It is the literal-reading weakness of the model class
+(Section 5.3) appearing in the one place calibration was supposed to protect, and it is why
+this point is specified as a filter in front of a human or a larger model rather than as an
+autonomous committer.
+
+*Memory collision (M2).* The `replace` branch fired on 4 of 4 contradictions and was right
+each time; the `duplicate` branch **never fired at all** on 16 cases. At the shipped
+thresholds the point is in practice a contradiction detector with a safe default, and its
+duplicate-suppression half is unproven.
+
+*Memory write (M1).* All four policy errors are facts that should have been stored and were
+not, which is the safe direction: a missed memory costs a re-derivation, a junk memory is
+read for the rest of the job. The weakest question is `durable` on a stated preference ("the
+client asked for the report in Spanish"), where the evaluator returned 0.5 at confidence 0.
+
+*A first draft of M2 was wrong in design, not in accuracy.* It asked whether two facts spoke
+about the same attribute, which sent every corroboration, the same figure from a second
+source and the common case in an investigation, to a human as though it were a conflict. The
+question now asks for a contradiction. The error surfaced while writing the bench, which is
+an argument for writing the cases before trusting the point.
+
+*Three labels were corrected after the run, and two deliberately were not.* Three cases were
+mislabelled on the question's own criteria: a page that also announces a governor's visit
+does add something; a directory entry that adds a sector and a status does add something; a
+fact that says "sole shareholder" is more specific than one that says "belongs to". The
+corrections and their reasons are recorded in the bench headers, and both sets of numbers are
+published. Two further disagreements were left standing, because the evaluator missed them at
+low confidence and a bench that moves its labels to match the model measures nothing.
+
+### 5.11 Where a decision may be applied: the prompt cache
+
+Every result above concerns whether a decision is *correct*. This one concerns whether it may
+be *acted on*, and it is the first experiment in this line of work where the layer loses
+money instead of saving it.
+
+Anthropic's prompt cache matches on a prefix rendered in the order `tools -> system ->
+messages`, and a change at any level invalidates that level and all later ones; a cached read
+costs 0.1x base input and a five-minute write costs 1.25x [Anthropic, 2026a]. The
+tool-selection point of Section 3.3, which the literature makes the largest single saving
+available to a harness (58 tools at about 55k tokens of definitions, a 134k peak, and 85 %
+fewer definition tokens from server-side tool search [Anthropic, 2025b]), therefore acts on
+the one part of a request that sits in front of everything else.
+
+Four arms, 8 turns each, claude-sonnet-5, identical in model, system prompt, questions and
+turn count. Each arm tags its tool descriptions with its own name so that it cannot read a
+cache another arm wrote. 0.70 USD of real spend.
+
+| Arm | Tools per turn | Cached reads | Cache writes | Cost | vs deciding once |
+|---|---|---|---|---|---|
+| Full catalog, fixed | 58 | 201,957 | 28,851 | 0.13873 USD | 1.75x |
+| Narrowed once, then fixed | 28 | 98,567 | 14,081 | **0.07916 USD** | 1.00x |
+| Two stable subsets, alternating | 28/58 | 129,312 | 43,104 | 0.15770 USD | 1.99x |
+| A different subset every turn | 28-30 | **0** | 117,148 | 0.32864 USD | **4.15x** |
+
+Narrowing the catalog once is worth **43 %**. Narrowing it on alternate turns costs **14 %
+more** than never narrowing: the schema saving is real, and smaller than the three extra
+cache writes it buys. Narrowing it differently every turn reads **nothing** from cache across
+eight turns, and that zero is the finding: because tools precede everything, an unstable tool
+set stops the *conversation* from caching, not merely the schemas.
+
+The same decision, the same tools, a different moment, and the sign of the effect changes.
+This is what the fourth invariant of Section 3.4 encodes.
+
+*The first run of this experiment was wrong, in a way worth recording.* All arms shared one
+catalog, so the later arms read caches the earlier ones had written, and the per-turn arm
+came out cheapest of the three at 0.062 USD: a number which, read without care, says the
+naive wiring is the best one. The prefix cache is keyed by the bytes of the prefix and not by
+the conversation, so an arm inherits whatever an earlier arm wrote. That first run also
+produced the fourth arm, because it showed the risk is not narrowing but instability: two
+stable subsets cache as two entries and then read cheaply.
+
+*What it does not say.* One model, one synthetic catalog of 58 tools at about 18k tokens,
+roughly a third of what Anthropic reports for 58 real MCP tools, so the schema-side saving
+here is understated. The arms were asked questions that need no tool call, so nothing here
+measures whether a narrowed catalog answers as well. The accuracy of the tool-selection point
+itself remains unmeasured (Section 8, item 7).
+
 ---
 
 ## 6. Analysis
+
+**Three economies, and one anti-economy.** Draft 2 reported accuracy and left the
+question of value to an end-to-end experiment. That experiment has now been run twice and
+returned null twice (page triage, 64 paired runs), and the negative result is more
+informative than a positive one would have been, because it separates three ways a cheap
+decision can be worth something.
+
+*Substitution.* The decision replaces a call some model was going to make anyway: verify this
+citation, match this pair of mentions, check this triple, screen this page for injected
+instructions, classify this record. The saving is a price ratio, it does not depend on the
+workload, and it is the only one of the three whose arithmetic is safe. Measured here at 49x
+against a small LLM on the same cases, and by list price at 24-119x. Against a hosted
+evaluation meter, which bills 20 USD per million input tokens and 60 per million output, the
+ratio for a thousand judgments is roughly 1,450x.
+
+*Avoidance.* The decision keeps tokens out of a large model's context. This is what page
+triage does, and it disappoints for three compounding reasons: inside a warm loop those
+tokens are priced at the cache-read rate of 0.1x, which cuts the multiple from 48x to 4.8x on
+a Sonnet-class model; fewer input tokens is not proportionally fewer dollars, with one
+published pruning system reporting 40-60 % fewer input tokens and only 21-36 % less cost at
+equal performance [AgentDiet, 2025]; and the lever needs a workload that fetches many
+documents, most of them useless, which ours was not.
+
+*Affordability.* Some checks are not skipped because they are hard but because running them
+on everything is unaffordable: verify every extracted triple, resolve every candidate pair
+after blocking, test every retrieved chunk for relevance. LazyGraphRAG makes the point by
+construction, since its relevance-test budget of 100, 500 or 1,500 binary judgments per query
+is the parameter that controls its whole cost-quality curve [LazyGraphRAG, 2024]. At 29
+millionths a judgment, 1,500 of them cost 0.043 USD. The output is not a smaller bill; it is
+a check that used to be sampled and can now be exhaustive, and it should be reported as
+quality rather than as savings.
+
+*The anti-economy* is Section 5.11: a decision applied where acting invalidates a cached
+prefix costs 4.15x instead of saving 43 %.
+
+**Where a decision lands matters more than how good it is.** Our cache result is one half of
+this; the other half is not ours. Meta reported that moving the same static analysis, with
+the same false-positive rate, from batch review to diff time took its fix rate from near zero
+to over 70 % [Distefano et al., 2019]. Atlassian ran the corresponding ablation inside an
+LLM code reviewer: an encoder classifier predicting whether an engineer would *act* on a
+comment added 20 points of alignment with human reviewers, while an LLM-as-judge predicting
+whether the comment was *true* had "minimal impact" [Atlassian, 2026]. A calibrated layer
+should therefore be specified by its attachment point first and its accuracy second, and,
+where the choice exists, should be asked to predict behaviour rather than truth.
 
 **Where the evaluator earns its place.** Injection detection, citation support including
 near-miss numbers, unsourced-claim detection, entity alignment, pairwise dependency, and
@@ -491,11 +681,24 @@ would be too strict for Truth and too lax for Score. The package exposes one thr
 decision and keeps the Score-driven one highest.
 
 **Cost.** At 0.042 USD per million input tokens and 600-2,500 tokens per decision, one
-decision costs 0.00003-0.0001 USD. A task with 300 procedural decisions costs 0.01-0.03 USD
-in evaluation. The same decisions made by the large model in its own context are not
-itemised, but each is a turn of a model priced 100-400x higher per token, plus the tokens of
-whatever irrelevant page the triage would have kept out. We do not claim an end-to-end saving
-figure; Section 8 says how it should be measured.
+decision costs 0.00003-0.0001 USD, a figure now measured twice on different distributions
+(Sections 5.9 and 5.10, which agree to within a fifth of a millionth). A task with 300
+procedural decisions costs
+0.01-0.03 USD in evaluation. We still do not claim an end-to-end saving figure for avoidance;
+the one end-to-end percentage this work supports belongs to wiring rather than to the model,
+and it is the 43 % of Section 5.11.
+
+**A threshold can cost more than a model.** Section 5.10 is the clearest instance: perfect
+ordering on six points, and eight correct actions lost to thresholds imported from a
+different distribution. The design consequence is not to loosen them by hand but to change
+what a threshold is derived from. A confidence cut treats every point alike; a target
+precision per point, reported as recall at that precision, is what a deployed system of this
+shape uses [Frommgen et al., 2024], and it is what item 3 of Section 8 now asks for.
+
+**A filter needs something to filter.** One boundary condition deserves recording before
+anyone stacks this layer on a weak generator: a trained filter moved a 10.1 % precision
+reviewer to 10.6 %, and the same filter moved a 57.0 % reviewer to 65.6 % [BitsAI-CR, 2025].
+Below some precision floor there is no separable signal, and no threshold recovers one.
 
 **The heterogeneous critic.** D6 is the *evaluate* step performed by a model that did not
 reason, cannot write, and belongs to another family. It cannot prefer its own text because it
@@ -529,17 +732,38 @@ to the questions and the policy, not to the harness they were first built in.
 - **One plan.** The DAG result is one case, not a distribution.
 - **Provider under early access.** Version pinned; the vendor states limits may change. Jev is
   hosted by a single vendor; the contract exists so that a local model can take over.
-- **No end-to-end measurement.** Everything here is decision-level.
+- **The eight new points are one annotator, 12-20 cases each, authored in one sitting.**
+  They are weaker evidence than the points of Section 5.1-5.9, not stronger, and three of
+  their labels were corrected after seeing the run. The corrections are recorded and both
+  sets of numbers are published, but a reader should treat them as what they are: an
+  annotator who was shown a disagreement and revised. A second annotator is the fix.
+- **One cache experiment, one model, one synthetic catalog.** Section 5.11 measures a
+  documented mechanism rather than a contested one, but it measures it once, on 8 turns, with
+  questions that call no tools. The arithmetic of the invalidation hierarchy is the vendor's;
+  the dollar figures are ours and they are small.
+- **Published figures used in Section 6 are mostly vendor-internal evaluations.** The Meta,
+  Atlassian, Google and Anthropic numbers come from engineering reports and industry-track
+  papers whose benchmarks are not public. They are used to motivate design, never as
+  evidence about this evaluator.
+- **No end-to-end measurement of avoidance.** The A/B is null; the fetch-heavy experiment
+  that would settle it is specified and unrun.
 
 ---
 
 ## 8. Limitations and future work
 
-1. **End-to-end A/B.** Same tasks, same tier, with and without the evaluator; cost, cited
-   sources, verified-citation rate, declared coverage, wall time. This is the experiment that
-   would license any saving claim.
-2. **Second annotator and 50 cases per point**, with adjudication and reported kappa.
-3. **Per-primitive thresholds**, derived from Section 5.8 once (2) exists.
+1. **Done, and null.** The end-to-end A/B on page triage ran over 64 paired runs in two
+   retrieval conditions and two document sizes: every cost interval spans zero, both latency
+   intervals exclude it, quality held. What remains is the *fetch-heavy* version: a task that
+   gathers 20-40 sources before writing, over a corpus where most of what retrieval returns
+   is off-target, with the redundancy point (D3b) on and off. Prediction, recorded in advance:
+   a real effect on input tokens, a smaller one on cost, latency still worse.
+2. **Second annotator and 50 cases per point**, with adjudication and reported kappa. This is
+   now the blocking item for eight points rather than a refinement of four.
+3. **Thresholds derived from a target precision, not from a confidence cut.** Per point, set
+   to hit a stated precision and reported as recall at that precision, in the shape of
+   [Frommgen et al., 2024]. Section 5.10 gives the size of the prize: 78 of 88 today against
+   86 of 88 at a plain 0.5 cut, with every loss in the safe direction.
 4. **The `other` option in closed vocabularies**: measure abstention with and without it on
    the register cases (about 0.005 USD).
 5. **Harvested adversarial set** for injection: multilingual, encoded, multi-page.
@@ -549,6 +773,20 @@ to the questions and the policy, not to the harness they were first built in.
 8. **Bandit allocation** of subagents over D5's per-branch signals.
 9. **Provider diversity**: an open-weight or in-house classifier behind the same contract, and
    a within-family control.
+10. **Behavioural labels rather than heuristic ones.** Deferred labelling should record what
+    the harness did next (did it act, was the action reverted, did the human override it),
+    not a heuristic proxy. An actionability classifier trained on heuristic labels caps at
+    AUC 0.59-0.68 once leakage and duplication are removed, and the label definition
+    dominates the model [Kang et al., 2022]. The shipped pattern to copy is reviewing
+    everything below threshold plus a random sample above it, as a standing audit of the
+    threshold itself.
+11. **The memory pipeline end to end**: a write path with and without the write gate and the
+    collision point, measured on calls, tokens and retrieval quality. Nobody has published
+    this; a 2026 survey found only 2 of 9 memory systems reporting any efficiency metric.
+12. **Fan-out sizing as a decision point.** The vendor states the buckets in prose (one agent
+    for simple fact-finding, two to four subagents for comparisons, ten or more for complex
+    research) and the token multiplier between the extremes is about 15x. It is a typed
+    choice with a large prize and an obvious quality risk, and it is not implemented here.
 
 ---
 
@@ -564,6 +802,13 @@ trace of every decision it changed. Where the evaluator is weak, stacking it on 
 deterministic rule keeps its ordering power without inheriting its threshold errors. The
 released package, benches and recording are there so that these claims can be checked, and
 extended, by anyone.
+
+Draft 3 adds a second lesson that took an end-to-end experiment to learn, and it is about
+engineering rather than about models: a decision is worth what its attachment point lets it
+be worth. The same tool selection saves 43 % applied once and costs 4.15x applied every turn;
+the same static analysis, elsewhere in the literature, is ignored in batch and acted on at
+diff time. Accuracy is necessary and it is not what determines whether a layer like this
+pays. Where it is allowed to act is.
 
 ---
 
@@ -590,6 +835,21 @@ extended, by anyone.
 - TypeSafe (2026e). *Skill suggestion.* https://docs.typesafe.ai/cookbooks/skill_suggestion
 - Yao, S. et al. (2023). *ReAct.* ICLR 2023.
 
+Added in draft 3:
+
+- Anthropic (2026a). *Prompt caching.* Cache read 0.1x, five-minute write 1.25x, one-hour write 2x; the `tools -> system -> messages` invalidation hierarchy. https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+- Anthropic (2025b). *Advanced tool use.* 58 tools at ~55k tokens; a 134k peak; tool search 77k -> 8.7k, 85 %; programmatic tool calling 43,588 -> 27,297 tokens. https://www.anthropic.com/engineering/advanced-tool-use
+- Atlassian (2026). *RovoDev code reviewer: a large-scale online evaluation of LLM-based code review automation.* arXiv:2601.01129.
+- Distefano, D., Fahndrich, M., Logozzo, F., O'Hearn, P. (2019). *Scaling static analyses at Facebook.* CACM 62(8).
+- Frommgen, A. et al. (2024). *Resolving code review comments with ML.* ICSE-SEIP 2024.
+- Kang, H., Aw, K. L., Lo, D. (2022). *Detecting false alarms from automatic static analysis tools.* ICSE 2022, arXiv:2202.05982.
+- *BitsAI-CR* (2025). arXiv:2501.15134, FSE 2025 industry track.
+- *AgentDiet* (2025). arXiv:2509.23586.
+- Repantis, V. et al. (2026). *How many tools should an LLM agent see? A chance-corrected answer.* arXiv:2605.24660.
+- Microsoft Research (2024). *LazyGraphRAG.* https://www.microsoft.com/en-us/research/blog/lazygraphrag-setting-a-new-standard-for-quality-and-cost/
+- *Mem0* (2025). arXiv:2504.19413.
+- Weinberger, S., Hozez, A. (2026). *Prompt-induced waste in coding agents: reasoning, effort, harness design, and end-to-end cost.* arXiv:2608.01347.
+
 ---
 
 ## Appendix A. Reproducibility
@@ -608,6 +868,22 @@ Files: `benches/` (245 cases), `fixtures/public-benches.jsonl` (303 recorded dec
 `summary.md`, `summary.json`, `provenance.json`). Question texts: `src/sanchopanza/points/*.py`,
 verbatim. Statistics: `src/sanchopanza/eval/stats.py`. DAG: `src/sanchopanza/dag.py`. Thresholds:
 `src/sanchopanza/policy.py`, fixed before the run.
+
+**New points and the cache experiment (draft 3).**
+
+```
+sanchopanza bench benches/memory.jsonl benches/graph-build.jsonl \
+    benches/retrieval.jsonl benches/loop.jsonl \
+    --provider recorded --fixture fixtures/new-points.jsonl        # free, exact replay
+python benchmarks/cache/run.py --dry                               # the arithmetic, free
+python benchmarks/cache/run.py --turns 8                           # the four arms, ~0.70 USD
+```
+
+Files: `benches/{memory,graph-build,retrieval,loop}.jsonl` (124 cases),
+`fixtures/new-points.jsonl` (122 recorded decisions),
+`docs/results/2026-09-24-new-points/`, `benchmarks/cache/results/`. The replay is pinned by
+`tests/test_new_point_benches.py`, including the gap between the plain 0.5 cut and the
+shipped thresholds, so that a future tuning pass has to improve on a recorded number.
 
 **Private runs (E1-E6, G1-G4).** Performed in the originating harness on 2026-09-21 with the
 same question texts and thresholds; per-call results (670 + 418 rows), summaries and
