@@ -1,0 +1,4 @@
+# Every path needs review from the owner. Combined with a branch protection rule that
+# requires a pull request and requires review from Code Owners, this is what stops anything
+# reaching dev or main without Roman.
+*       @romanpert

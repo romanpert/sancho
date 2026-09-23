@@ -49,3 +49,24 @@ def test_auc_brier_ece_sanity():
     assert stats.ece([0.5, 0.5], [True, True]) == pytest.approx(0.5)
     assert stats.cohen_kappa(["a", "b", "a"], ["a", "b", "a"]) == 1.0
     assert stats.median([3, 1, 2]) == 2 and stats.median([1, 2, 3, 4]) == 2.5
+
+
+def test_excerpt_leaves_short_text_alone_and_finds_the_window_in_long_text():
+    """The bug the end-to-end benchmark found: a head-only cut hides the answer."""
+    from sanchopanza.text import excerpt
+
+    corto = "una pagina corta que cabe entera"
+    assert excerpt(corto, "cualquier proposito", 1500) == corto
+
+    relleno = "preamble about licensing and acknowledgements. " * 40
+    enterrado = "the reconstructed DAG reaches precision 100 % and recall 88 % here."
+    largo = relleno + enterrado + relleno
+    trozo = excerpt(largo, "precision and recall of the reconstructed DAG", 600)
+
+    assert enterrado in trozo, "la ventana tiene que traer la parte que responde al proposito"
+    assert trozo.startswith(relleno[:50]), "y tiene que conservar la cabecera"
+    assert " [...] " in trozo
+    assert len(trozo) <= 600 + len(" [...] ")
+
+    # Sin palabras utiles en el proposito, cae a cabeza mas cola y no revienta.
+    assert " [...] " in excerpt(largo, "de la", 600)

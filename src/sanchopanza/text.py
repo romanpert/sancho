@@ -66,6 +66,42 @@ def truncate(text: object, limit: int) -> str:
     return text if len(text) <= limit else text[:limit] + " [...]"
 
 
+def excerpt(text: object, purpose: str, limit: int) -> str:
+    """A representative slice of a long document, for a decision about its relevance.
+
+    Cutting from the head is wrong on a long document: the part that answers the purpose is
+    often in the middle, and the decider then judges relevance on a preamble that genuinely
+    does not mention it. The end-to-end benchmark caught exactly that (`benchmarks/ab`): on a
+    10,000-character document triage dropped the one page holding the answer, the agent
+    re-fetched it, hit its turn cap and the run cost twice as much for no answer.
+
+    So a document longer than the limit is sent as its head plus the window with the most
+    hits for the words of the purpose, joined by the same `[...]` marker `truncate` uses.
+    Deterministic, no model call, no extra tokens. A document that already fits is returned
+    unchanged, so nothing that fit before changes behaviour, including every bench case.
+    """
+    text = str(text or "")
+    if len(text) <= limit:
+        return text
+    marker = " [...] "
+    head_len = limit // 3
+    window_len = max(1, limit - head_len - len(marker))
+    head, rest = text[:head_len], text[head_len:]
+    words = tokens(purpose)
+    if not words or len(rest) <= window_len:
+        return head + marker + rest[-window_len:]
+
+    lowered = rest.lower()
+    step = max(1, window_len // 4)
+    best_start, best_score = 0, -1
+    for start in range(0, len(rest) - window_len + 1, step):
+        chunk = lowered[start : start + window_len]
+        score = sum(chunk.count(w) for w in words)
+        if score > best_score:
+            best_start, best_score = start, score
+    return head + marker + rest[best_start : best_start + window_len]
+
+
 def normalize(text: str) -> str:
     """Collapse whitespace and straighten typographic quotes: the only tolerated edits."""
     flat = re.sub(r"\s+", " ", text or "").strip()

@@ -14,7 +14,7 @@ from typing import Any
 
 from ..contract import Choice, Decision, Question, Truth
 from ..policy import Thresholds, probability
-from ..text import truncate
+from ..text import excerpt, truncate
 from . import injection
 
 TEXT_LIMIT = 1500
@@ -46,7 +46,9 @@ def questions(
         "purpose": truncate(purpose, 400),
         "title": truncate(title, 200),
         "url": truncate(url, 300),
-        "text": truncate(text, TEXT_LIMIT),
+        # Head plus the window that matches the purpose, not just the head: see `text.excerpt`.
+        # For anything at or under the limit this is the text unchanged.
+        "text": excerpt(text, purpose, TEXT_LIMIT),
     }
     qs: dict[str, Question] = {
         "relevant": Truth("Does `text` address what `purpose` is looking for?"),

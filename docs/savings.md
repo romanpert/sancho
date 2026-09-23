@@ -105,16 +105,41 @@ On 18 search cases it sent 11 to a free engine, cut
 for 0.000792 USD. The saving there is whatever your search
 provider charges per query, which we cannot measure for you.
 
-## What is not measured, and what would settle it
+## The end-to-end A/B, now that it has been run
 
-Nothing above says the deliverable gets cheaper or better. It says what the layer costs and
-what it keeps out. The experiment that would license a headline number is the same one the
-paper asks for in Section 8:
+Everything above is arithmetic about tokens. It does not say the deliverable gets cheaper or
+better. That question needed its own experiment, and `benchmarks/ab/` is it: the same agent,
+the same eight tasks, the same prompts, tools, model, thinking and effort, one arm with page
+triage and one without, over a fixed corpus, with each squire run paired against the run of
+the same task and repetition without it.
 
-- The same tasks, the same tier, run with and without the squire, three repetitions.
-- Measured on both sides: total cost, wall time, sources cited, verified-citation rate,
-  declared coverage, and a blind quality comparison of the deliverables.
-- Estimated at 15 to 25 USD of model spend for a meaningful sample.
+**On page-sized documents the cost difference was not distinguishable from zero.** Forty
+pairs, Claude Sonnet 5, noisy retrieval:
 
-Until that is run, quote the break-even numbers and the cost per decision, which are
-measured, and not a saving percentage, which is not.
+| Measure | Change with the squire | 95 % paired bootstrap |
+|---|---|---|
+| Input tokens | -3.3 % | [-13.6 %, +11.2 %] |
+| Total cost | -1.3 % | [-11.2 %, +12.6 %] |
+| Wall time | **+16.4 %** | [+4.2 %, +30.5 %] |
+
+Answer quality did not suffer: 38 of 40 correct without the squire, 39 of 40 with it. The
+latency cost, on the other hand, is real and its interval excludes zero: an extra round trip
+per fetched page, plus the occasional extra fetch.
+
+That is the honest headline at this document size, and it agrees with the break-even table:
+with documents averaging a couple of thousand characters and 0.45 pages dropped per run, the
+expected saving is a rounding error next to the run-to-run variance of the agent's own search
+path. The `--doc-size large` condition tests the other half of the prediction, that the effect
+grows with document size; results are in `benchmarks/ab/results/`.
+
+**What to quote, then.** The cost per decision and the break-even, which are measured. The
+safety and quality numbers from the paper, which are measured. Not a saving percentage,
+because at ordinary document sizes we looked for one and it was not there.
+
+**What the A/B was worth anyway.** It found a real bug. Triage was judging a 10,000-character
+document on its first 1,500 characters, deciding the preamble did not address the purpose and
+dropping the one page that held the answer; the agent re-fetched it, hit its turn cap and
+returned nothing at twice the cost. `sanchopanza.text.excerpt` now sends the head plus the
+window that matches the purpose. No decision-level number moved, because documents that
+already fit are unchanged. The decisions were fine; the way they were wired to long documents
+was not, and only an end-to-end run could show that.

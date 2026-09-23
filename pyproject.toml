@@ -54,7 +54,17 @@ Paper = "https://github.com/romanpert/sancho/blob/main/docs/paper.md"
 packages = ["src/sanchopanza"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/sanchopanza", "benches", "fixtures", "docs", "README.md", "LICENSE"]
+include = [
+  "src/sanchopanza",
+  "benches",
+  "fixtures",
+  "benchmarks",
+  "skills",
+  "docs",
+  "README.md",
+  "LICENSE",
+  "NOTICE",
+]
 
 [tool.ruff]
 line-length = 100

@@ -1,0 +1,300 @@
+{
+ "arms": {
+  "bare": {
+   "runs": 40,
+   "correct": 38,
+   "answered": 40,
+   "input_tokens_mean": 10909,
+   "output_tokens_mean": 423,
+   "model_cost_mean": 0.026053,
+   "squire_cost_mean": 0.0,
+   "total_cost_mean": 0.026053,
+   "wall_s_mean": 7.6,
+   "fetches_mean": 1.77,
+   "dropped_mean": 0,
+   "turns_mean": 4.17
+  },
+  "squire": {
+   "runs": 40,
+   "correct": 39,
+   "answered": 40,
+   "input_tokens_mean": 10550,
+   "output_tokens_mean": 451,
+   "model_cost_mean": 0.025609,
+   "squire_cost_mean": 0.000111,
+   "total_cost_mean": 0.025719,
+   "wall_s_mean": 8.9,
+   "fetches_mean": 1.98,
+   "dropped_mean": 0.45,
+   "turns_mean": 4.3
+  }
+ },
+ "delta": {
+  "input_tokens_pct": -3.3,
+  "total_cost_pct": -1.3,
+  "model_cost_pct": -1.7,
+  "wall_s_pct": 17.1,
+  "correct_bare": "38/40",
+  "correct_squire": "39/40"
+ },
+ "by_task": {
+  "breakeven": {
+   "bare": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 7063,
+    "output_tokens_mean": 392,
+    "model_cost_mean": 0.01805,
+    "squire_cost_mean": 0.0,
+    "total_cost_mean": 0.01805,
+    "wall_s_mean": 7.5,
+    "fetches_mean": 2,
+    "dropped_mean": 0,
+    "turns_mean": 4.2
+   },
+   "squire": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 6855,
+    "output_tokens_mean": 435,
+    "model_cost_mean": 0.018064,
+    "squire_cost_mean": 0.00013,
+    "total_cost_mean": 0.018194,
+    "wall_s_mean": 8.8,
+    "fetches_mean": 2.4,
+    "dropped_mean": 0.4,
+    "turns_mean": 4
+   }
+  },
+  "classify": {
+   "bare": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 16716,
+    "output_tokens_mean": 449,
+    "model_cost_mean": 0.037921,
+    "squire_cost_mean": 0.0,
+    "total_cost_mean": 0.037921,
+    "wall_s_mean": 9.6,
+    "fetches_mean": 2,
+    "dropped_mean": 0,
+    "turns_mean": 5
+   },
+   "squire": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 16509,
+    "output_tokens_mean": 465,
+    "model_cost_mean": 0.037668,
+    "squire_cost_mean": 0.000121,
+    "total_cost_mean": 0.037789,
+    "wall_s_mean": 10.4,
+    "fetches_mean": 2,
+    "dropped_mean": 0,
+    "turns_mean": 5
+   }
+  },
+  "cost": {
+   "bare": {
+    "runs": 5,
+    "correct": 3,
+    "answered": 5,
+    "input_tokens_mean": 9085,
+    "output_tokens_mean": 504,
+    "model_cost_mean": 0.023214,
+    "squire_cost_mean": 0.0,
+    "total_cost_mean": 0.023214,
+    "wall_s_mean": 7.6,
+    "fetches_mean": 2,
+    "dropped_mean": 0,
+    "turns_mean": 4.4
+   },
+   "squire": {
+    "runs": 5,
+    "correct": 4,
+    "answered": 5,
+    "input_tokens_mean": 8978,
+    "output_tokens_mean": 532,
+    "model_cost_mean": 0.023272,
+    "squire_cost_mean": 0.000107,
+    "total_cost_mean": 0.023379,
+    "wall_s_mean": 8.6,
+    "fetches_mean": 2,
+    "dropped_mean": 0,
+    "turns_mean": 4.2
+   }
+  },
+  "dag": {
+   "bare": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 18965,
+    "output_tokens_mean": 559,
+    "model_cost_mean": 0.043519,
+    "squire_cost_mean": 0.0,
+    "total_cost_mean": 0.043519,
+    "wall_s_mean": 10.4,
+    "fetches_mean": 2,
+    "dropped_mean": 0,
+    "turns_mean": 5
+   },
+   "squire": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 14771,
+    "output_tokens_mean": 625,
+    "model_cost_mean": 0.035788,
+    "squire_cost_mean": 0.000138,
+    "total_cost_mean": 0.035927,
+    "wall_s_mean": 10.2,
+    "fetches_mean": 2.4,
+    "dropped_mean": 1.4,
+    "turns_mean": 5.4
+   }
+  },
+  "entity": {
+   "bare": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 12151,
+    "output_tokens_mean": 388,
+    "model_cost_mean": 0.028182,
+    "squire_cost_mean": 0.0,
+    "total_cost_mean": 0.028182,
+    "wall_s_mean": 7.7,
+    "fetches_mean": 1.6,
+    "dropped_mean": 0,
+    "turns_mean": 4
+   },
+   "squire": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 15427,
+    "output_tokens_mean": 498,
+    "model_cost_mean": 0.03583,
+    "squire_cost_mean": 0.00015,
+    "total_cost_mean": 0.035981,
+    "wall_s_mean": 11.0,
+    "fetches_mean": 2.6,
+    "dropped_mean": 1,
+    "turns_mean": 4.8
+   }
+  },
+  "injection": {
+   "bare": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 16045,
+    "output_tokens_mean": 551,
+    "model_cost_mean": 0.037597,
+    "squire_cost_mean": 0.0,
+    "total_cost_mean": 0.037597,
+    "wall_s_mean": 8.1,
+    "fetches_mean": 2.6,
+    "dropped_mean": 0,
+    "turns_mean": 4.8
+   },
+   "squire": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 14469,
+    "output_tokens_mean": 489,
+    "model_cost_mean": 0.033828,
+    "squire_cost_mean": 0.000144,
+    "total_cost_mean": 0.033972,
+    "wall_s_mean": 10.4,
+    "fetches_mean": 2.4,
+    "dropped_mean": 0.8,
+    "turns_mean": 5
+   }
+  },
+  "toolselect": {
+   "bare": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 3878,
+    "output_tokens_mean": 233,
+    "model_cost_mean": 0.010082,
+    "squire_cost_mean": 0.0,
+    "total_cost_mean": 0.010082,
+    "wall_s_mean": 4.3,
+    "fetches_mean": 1,
+    "dropped_mean": 0,
+    "turns_mean": 3
+   },
+   "squire": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 3878,
+    "output_tokens_mean": 243,
+    "model_cost_mean": 0.010182,
+    "squire_cost_mean": 5.2e-05,
+    "total_cost_mean": 0.010234,
+    "wall_s_mean": 4.9,
+    "fetches_mean": 1,
+    "dropped_mean": 0,
+    "turns_mean": 3
+   }
+  },
+  "viviendas": {
+   "bare": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 3373,
+    "output_tokens_mean": 311,
+    "model_cost_mean": 0.00986,
+    "squire_cost_mean": 0.0,
+    "total_cost_mean": 0.00986,
+    "wall_s_mean": 5.7,
+    "fetches_mean": 1,
+    "dropped_mean": 0,
+    "turns_mean": 3
+   },
+   "squire": {
+    "runs": 5,
+    "correct": 5,
+    "answered": 5,
+    "input_tokens_mean": 3514,
+    "output_tokens_mean": 321,
+    "model_cost_mean": 0.010236,
+    "squire_cost_mean": 4.3e-05,
+    "total_cost_mean": 0.010279,
+    "wall_s_mean": 6.8,
+    "fetches_mean": 1,
+    "dropped_mean": 0,
+    "turns_mean": 3
+   }
+  }
+ },
+ "paired": {
+  "pairs": 40,
+  "input_tokens": [
+   -0.03293024151135371,
+   -0.13611002532036365,
+   0.11180881682474597
+  ],
+  "total_cost": [
+   -0.012814736058280984,
+   -0.1118129732112858,
+   0.12632540965123273
+  ],
+  "wall_s": [
+   0.16396940550832162,
+   0.04247565739607029,
+   0.30513779952507747
+  ]
+ }
+}

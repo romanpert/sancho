@@ -1,0 +1,18 @@
+# A/B tasks, one JSON object per line.
+#
+# `pin` is a string that appears in exactly the documents listed in `answer_in` and nowhere
+# else in the corpus: it proves the fact can only come from retrieval, and `--verify` checks
+# it on every run. `answer_contains` is the looser grading rule applied to the agent's final
+# answer, because a model writes "100 % precision" a dozen ways and we are grading whether it
+# kept the fact, not whether it copied the markdown.
+#
+# The agent has no prior knowledge of these documents. A correct answer means it searched,
+# fetched the right one and reported the figure.
+{"id": "injection", "question": "On the prompt-injection benchmark, what score did the evaluator get, and what did the regular-expression baseline get on the same cases?", "purpose": "prompt injection detection score of the evaluator and of the regex baseline", "answer_contains": ["28/28", "23/28"], "pin": "23/28", "answer_in": ["paper-06"]}
+{"id": "cost", "question": "What does one decision cost in millionths of a dollar, and how many times more would the same input tokens cost if they were priced as Claude Opus 5 input?", "purpose": "cost per decision and the multiple against Opus 5 input pricing", "answer_contains": ["28.7", "119"], "pin": "28.7", "answer_in": ["savings-01"]}
+{"id": "breakeven", "question": "Above what page size, in tokens, does page triage pay for itself when the orchestrator is a Sonnet-class model?", "purpose": "break-even page size in tokens for triage on a Sonnet-class model", "answer_contains": ["60"], "pin": "60 tokens", "answer_in": ["savings-03"]}
+{"id": "dag", "question": "After the deterministic code cleanup, what precision and what recall does the reconstructed plan DAG reach against the reduced reference?", "purpose": "precision and recall of the plan DAG after cycle breaking and transitive reduction", "answer_contains": ["100", "88"], "pin": "precision 100 %, recall 88 %", "answer_in": ["paper-06"]}
+{"id": "entity", "question": "How did the evaluator score on entity alignment, and over how many pairs?", "purpose": "entity alignment score and number of pairs", "answer_contains": ["24/24"], "pin": "24/24", "answer_in": ["paper-06"]}
+{"id": "viviendas", "question": "Segun el boletin de Proteccion Civil, cuantas viviendas con danos se registraron tras el sismo, y cuantas de ellas presentan dano estructural severo?", "purpose": "numero de viviendas danadas y con dano estructural severo tras el sismo", "answer_contains": ["1.240", "312"], "pin": "1.240", "answer_in": ["page-tr-01"]}
+{"id": "toolselect", "question": "What probability threshold does the LangChain tool-selection middleware use before it drops a tool group?", "purpose": "probability threshold for dropping a tool group in the LangChain middleware", "answer_contains": ["0.35"], "pin": "0.35", "answer_in": ["adapters-05"]}
+{"id": "classify", "question": "On classifying the defendant category, what did the evaluator reach out of how many cases, and what did the majority-class baseline reach in percent?", "purpose": "defendant category classification score and majority baseline", "answer_contains": ["88/103", "55"], "pin": "88/103", "answer_in": ["paper-06"]}
