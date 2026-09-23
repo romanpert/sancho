@@ -113,28 +113,32 @@ the same eight tasks, the same prompts, tools, model, thinking and effort, one a
 triage and one without, over a fixed corpus, with each squire run paired against the run of
 the same task and repetition without it.
 
-**On page-sized documents the cost difference was not distinguishable from zero.** Forty
-pairs, Claude Sonnet 5, noisy retrieval:
+**We could not measure a cost saving. In either condition.** Claude Sonnet 5, 64 paired runs:
 
-| Measure | Change with the squire | 95 % paired bootstrap |
-|---|---|---|
-| Input tokens | -3.3 % | [-13.6 %, +11.2 %] |
-| Total cost | -1.3 % | [-11.2 %, +12.6 %] |
-| Wall time | **+16.4 %** | [+4.2 %, +30.5 %] |
+| Condition | Pairs | Input tokens | Total cost | Wall time | Correct |
+|---|---|---|---|---|---|
+| Page-sized documents | 40 | -3.3 % [-13.6, +11.2] | -1.3 % [-11.2, +12.6] | **+16.4 %** [+4.2, +30.5] | 38/40 to 39/40 |
+| Large documents | 24 | +0.3 % [-6.2, +11.6] | -0.2 % [-6.2, +10.5] | **+11.6 %** [+4.1, +18.9] | 21/24 to 21/24 |
 
-Answer quality did not suffer: 38 of 40 correct without the squire, 39 of 40 with it. The
-latency cost, on the other hand, is real and its interval excludes zero: an extra round trip
-per fetched page, plus the occasional extra fetch.
+Every cost interval spans zero. Both latency intervals exclude it. Quality held: the squire
+lost no answers and gained one in the first condition.
 
-That is the honest headline at this document size, and it agrees with the break-even table:
-with documents averaging a couple of thousand characters and 0.45 pages dropped per run, the
-expected saving is a rounding error next to the run-to-run variance of the agent's own search
-path. The `--doc-size large` condition tests the other half of the prediction, that the effect
-grows with document size; results are in `benchmarks/ab/results/`.
+**Why, and it is visible in the runs.** The lever needs the agent to fetch several documents
+of which several are useless. It fetched 1.8 per task in the first condition and 1.0 in the
+second, and triage dropped 0.45 and 0.17 of them. Making the documents larger did not help,
+because in this corpus size and retrieval difficulty are coupled: larger documents means
+fewer of them, each holding more, so the first one the agent opens usually has the answer.
+Nothing was left for triage to keep out.
+
+**What would show the effect, if it is there.** A fetch-heavy workload: a task that gathers
+twenty to forty sources before writing, which is what a real dossier does, over a corpus where
+most of what retrieval returns is genuinely off-target. That is the next experiment, and it is
+not this one. Until someone runs it, the arithmetic above is a prediction about that workload,
+not a result.
 
 **What to quote, then.** The cost per decision and the break-even, which are measured. The
-safety and quality numbers from the paper, which are measured. Not a saving percentage,
-because at ordinary document sizes we looked for one and it was not there.
+safety and quality numbers in the paper, which are measured. Not a saving percentage: we
+looked for one in our own agent, twice, and it was not there.
 
 **What the A/B was worth anyway.** It found a real bug. Triage was judging a 10,000-character
 document on its first 1,500 characters, deciding the preamble did not address the purpose and

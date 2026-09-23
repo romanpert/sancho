@@ -57,10 +57,17 @@ goes, and `--max-usd` aborts the sweep.
 
 Results are in `ab/results/`, with every run recorded in `runs.json`.
 
-The first honest finding is a null one: at page-sized documents the cost effect is not
-distinguishable from zero, while the latency cost is real. The break-even arithmetic in
-`../docs/savings.md` predicts exactly that, and the large-document condition is there to
-test the other half of the prediction.
+The first honest finding is a null one, and it held in both conditions: across 64 paired runs
+the cost effect is not distinguishable from zero, while the latency cost is real and its
+interval excludes zero. Quality did not move. The reason is in the runs: the agent fetched one
+to two documents per task and triage dropped a fraction of one. Enlarging the documents did
+not help, because in this corpus size and retrieval difficulty are coupled, so the larger the
+documents the easier it is to find the right one and the less there is to keep out.
+
+The experiment that would still settle the cost question is a fetch-heavy one, a task that
+gathers twenty to forty sources before writing, over a corpus where most of what retrieval
+returns is off-target. That is not this benchmark, and the prediction in `../docs/savings.md`
+should be read as being about that workload.
 
 The second is a bug this benchmark caught in the library itself. Triage judged a
 10,000-character document on its first 1,500 characters, decided the preamble did not address

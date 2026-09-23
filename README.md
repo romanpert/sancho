@@ -110,12 +110,16 @@ Full method, intervals and caveats: [the paper](docs/paper.md). Benches and how 
 | Measured against Claude Haiku 4.5, tool-forced, same cases | **49x cheaper, 3x faster**, comparable accuracy |
 
 **There is no headline saving percentage on this page, and that is deliberate.** We ran the
-end-to-end A/B ([benchmarks/ab](benchmarks/ab)) instead of guessing, and at page-sized
-documents the cost difference was not distinguishable from zero while latency went up. The
-break-even arithmetic says the same thing and says when it flips: a page pays for its own
-triage above about **60 tokens** on a Sonnet-class orchestrator, and the saving grows with
-document size. Numbers, arithmetic and the runs: [docs/savings.md](docs/savings.md) and
-[benchmarks/](benchmarks/).
+end-to-end A/B ([benchmarks/ab](benchmarks/ab)) instead of guessing. Across 64 paired runs,
+two retrieval conditions and two document sizes, page triage **did not measurably change
+cost** (every interval spans zero) and added 11 to 16 % wall time (both intervals exclude
+zero). It lost no answers. The reason is visible in the runs: our tasks fetched one or two
+documents each, and the lever only bites when an agent fetches many and most are useless.
+
+So: **add Sanchopanza for the safety and quality decisions, which are measured, not for the
+bill, which we could not demonstrate in our own agent.** The break-even arithmetic and the
+fetch-heavy experiment that would settle the cost question are in
+[docs/savings.md](docs/savings.md) and [benchmarks/](benchmarks/).
 
 ---
 
