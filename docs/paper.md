@@ -890,12 +890,29 @@ to the questions and the policy, not to the harness they were first built in.
    gathers 20-40 sources before writing, over a corpus where most of what retrieval returns
    is off-target, with the redundancy point (D3b) on and off. Prediction, recorded in advance:
    a real effect on input tokens, a smaller one on cost, latency still worse.
-2. **Second annotator and 50 cases per point**, with adjudication and reported kappa. This is
-   now the blocking item for eight points rather than a refinement of four.
-3. **Thresholds derived from a target precision, not from a confidence cut.** Per point, set
-   to hit a stated precision and reported as recall at that precision, in the shape of
-   [Frommgen et al., 2024]. Section 5.10 gives the size of the prize: 78 of 88 today against
-   86 of 88 at a plain 0.5 cut, with every loss in the safe direction.
+2. **Done for the six binary points, and it moved no threshold.** 212 new and deliberately
+   harder cases take them to 50 each; a second annotator, a separate generative model given
+   the same criteria and blind to both the first label and the evaluator's answer, agrees
+   with the author on 97 % of 211 cases, kappa 0.96. The evaluator agrees with the blind
+   annotator as often as with the author, 91 % against 90 %. Five labels were corrected on
+   the questions' own criteria and both sets of numbers are published; one correction was
+   disputed by the blind annotator and is recorded rather than resolved. Full account:
+   `docs/results/2026-09-24-fifty/`. What is still open is the same work for
+   `memory_collision` and `edge`, which have four and three labels and an abstention band.
+3. **Thresholds derived from a target precision: attempted, and the sample says no.** Doing
+   it properly means requiring the *lower bound* of precision to clear the target rather than
+   the point estimate, and deriving on one set while reporting on another. Under that rule
+   the sample-size floor is arithmetic: at perfect observed precision a target of 80 % needs
+   16 acted cases, 90 % needs 35 and 95 % needs 73, so **fifty cases per point supports an
+   80 % target and nothing above it**. Three of the six points reach 80 %, and in all three
+   the derived threshold scores exactly what the shipped one scores out of sample; the other
+   three, which include both points carrying the whole policy gap, do not reach it at all.
+   The first attempt, using observed precision as item 2 originally implied, produced
+   thresholds of 0.13 and 0.23 that missed their own 90 % target out of sample by up to 11
+   points - the two halves of the original plan were inconsistent for any target worth
+   having. The prize is unchanged and now measured on hard cases: **190 of 212 under the
+   shipped policy against 202 at a plain 0.5 cut**, every loss in the safe direction, AUC
+   0.97 to 1.00. Tool: `benchmarks/thresholds.py`.
 4. **The `other` option in closed vocabularies**: measure abstention with and without it on
    the register cases (about 0.005 USD).
 5. **Harvested adversarial set** for injection: multilingual, encoded, multi-page.

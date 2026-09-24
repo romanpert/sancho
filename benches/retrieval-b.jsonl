@@ -1,0 +1,89 @@
+# Source redundancy, second batch: the cases that take redundant_page to 50 (34 cases).
+#
+# Only the new cases live here; the original 16 stay in `retrieval.jsonl` so the run of
+# 2026-09-24 and its recording stay reproducible as published.
+#
+# This point now has a second reason to be measured properly. The fetch-heavy A/B pilot of
+# 2026-09-24 (benchmarks/ab/results/2026-09-24-scattered-piloto) asked it six times and it
+# dropped nothing: every page it was shown genuinely added something, so the end-to-end run
+# measured the agent's search-path variance and not the lever. Decision-level accuracy is the
+# only evidence this point has, which makes the quality of these cases the whole argument.
+#
+# The distinction the point exists to make, and the one every hard case here turns on:
+#
+#   drop: the page's informational content is already in `known`. Reprints, syndicated wire
+#         copy under another masthead, a summary of a document the agent already has, the
+#         same figures with the same attribution, and pages carrying no facts at all.
+#   keep: anything that moves the purpose forward, however slightly. A new attribution when
+#         the purpose is corroboration; a qualification, a correction or a later revision of
+#         a known figure; a breakdown of a known total; the same event seen from the part of
+#         the purpose still unanswered; a denial or a dissent.
+#
+# The failure mode this batch is built to expose is the one that costs coverage: judging
+# 'same topic' instead of 'adds nothing'. That is exactly the drift that forced the
+# relabelling of rd-04 and rd-12 in the first batch, so half the keeps below are pages that
+# look like restatements and carry one new thing.
+#
+# rd-39 and rd-44 are declared negative controls: both turn on which of two dates is later,
+# which this model class reads as text (paper Section 5.3).
+#
+# RELABELLED after the first run, on the question's own criteria and not because the model
+# disagreed: rd-19, rd-23, rd-35 and rd-42 were authored as `drop` on the theory that a page
+# with no bearing on the purpose adds nothing. They were wrong. The question asks whether the
+# text carries "no new figure, date, name, outcome, qualification or source" that `known`
+# lacks, and all four carry several - a magnitude and a depth, a founding year and a
+# headcount, a fleet size, a set of metro lines. They are off-purpose, not redundant, and
+# `decide_redundancy` is never given a relevance signal to judge that with: dropping an
+# off-topic page is page triage's job and triage runs first. The original labels were the
+# annotator making one point do two jobs. Both sets of numbers are published in
+# `docs/results/2026-09-24-fifty/`: 22/34 before the correction and 26/34 after, with the
+# evaluator's answers untouched.
+#
+# rd-15 in the first batch stays `drop` and is not the same case: it carries no fact of any
+# kind, only earthquake safety advice, so it satisfies the question's own criterion.
+#
+# DISPUTED, recorded and not resolved: the blind second annotator labelled rd-42 `drop`,
+# against the correction above and without having seen either label. It is the weakest of the
+# four: a page explaining how to reach a building by metro neither restates the known address
+# nor carries facts bearing on it, so it fits neither side of the question cleanly. rd-19,
+# rd-23 and rd-35 drew no dispute. The second annotator also read rd-33 and rd-37 as `keep`
+# against the author's `drop`. See `docs/results/2026-09-24-fifty/README.md` section 4.
+#
+# Annotator 1 (author) labelled every case before any decision was run; Annotator 2 is a
+# separate generative model, blind to that label and to the evaluator's answer. Agreement is
+# reported in the results directory, and where the paper uses these numbers it states that
+# one annotator is a model rather than a second human.
+{"id": "rd-17", "point": "redundant_page", "input": {"purpose": "cifras de viviendas danadas por el sismo del 12 de marzo de 2026 en Oaxaca", "known": "Boletin de Proteccion Civil del 14 de marzo: 1.240 viviendas con danos, 312 con dano estructural severo.", "text": "AGENCIA. El censo preliminar de Proteccion Civil registra 1.240 viviendas danadas por el sismo, 312 de ellas con dano estructural severo."}, "expected": "drop"}
+{"id": "rd-18", "point": "redundant_page", "input": {"purpose": "cifras de viviendas danadas por el sismo del 12 de marzo de 2026 en Oaxaca", "known": "Boletin de Proteccion Civil del 14 de marzo: 1.240 viviendas con danos, 312 con dano estructural severo.", "text": "Proteccion Civil corrigio este lunes su censo preliminar: las viviendas con dano estructural severo no son 312 sino 287, tras revisar las inspecciones de Salina Cruz."}, "expected": "keep"}
+{"id": "rd-19", "point": "redundant_page", "input": {"purpose": "cifras de viviendas danadas por el sismo del 12 de marzo de 2026 en Oaxaca", "known": "Boletin de Proteccion Civil del 14 de marzo: 1.240 viviendas con danos.", "text": "El sismo del 12 de marzo tuvo magnitud 6,8 y su epicentro se localizo a 103 kilometros de profundidad segun el SGC."}, "expected": "keep"}
+{"id": "rd-20", "point": "redundant_page", "input": {"purpose": "cifras de viviendas danadas por el sismo del 12 de marzo de 2026 en Oaxaca", "known": "Boletin de Proteccion Civil del 14 de marzo: 1.240 viviendas con danos.", "text": "La asociacion de damnificados sostiene que el censo oficial deja fuera al menos 300 viviendas de las zonas altas, no visitadas por los inspectores."}, "expected": "keep"}
+{"id": "rd-21", "point": "redundant_page", "input": {"purpose": "importes adjudicados a Constructora Norte en 2024", "known": "Portal de compras publicas: cuatro adjudicaciones en 2024 por 18,4 millones en total.", "text": "Constructora Norte obtuvo el ano pasado cuatro contratos publicos por un total de 18,4 millones, segun el portal de compras."}, "expected": "drop"}
+{"id": "rd-22", "point": "redundant_page", "input": {"purpose": "importes adjudicados a Constructora Norte en 2024", "known": "Portal de compras publicas: cuatro adjudicaciones en 2024 por 18,4 millones en total.", "text": "De los cuatro contratos de 2024, el mayor es el expediente 2024/0417 del Ministerio de Obras Publicas, por 8,2 millones."}, "expected": "keep"}
+{"id": "rd-23", "point": "redundant_page", "input": {"purpose": "importes adjudicados a Constructora Norte en 2024", "known": "Portal de compras publicas: cuatro adjudicaciones en 2024 por 18,4 millones en total.", "text": "La empresa fue fundada en 1997 y tiene su sede en Santiago. Su plantilla ronda los 400 empleados."}, "expected": "keep"}
+{"id": "rd-24", "point": "redundant_page", "input": {"purpose": "corroborar en una fuente independiente los 18,4 millones adjudicados a Constructora Norte", "known": "El portal de compras publicas suma 18,4 millones en 2024.", "text": "Un informe de la Camara de Cuentas sobre contratacion en 2024 cifra en 18,4 millones lo adjudicado a Constructora Norte."}, "expected": "keep"}
+{"id": "rd-25", "point": "redundant_page", "input": {"purpose": "quien administra Inversiones Delta y desde cuando", "known": "Registro panameno: socio unico y representante legal Mario Reyes Castillo desde 2011.", "text": "Segun el registro de Panama, Inversiones Delta S.A. tiene como socio unico a Mario Reyes Castillo desde su constitucion en 2011."}, "expected": "drop"}
+{"id": "rd-26", "point": "redundant_page", "input": {"purpose": "quien administra Inversiones Delta y desde cuando", "known": "Registro panameno: socio unico y representante legal Mario Reyes Castillo desde 2011.", "text": "En la ultima inscripcion, de marzo de 2024, figura tambien Ana Melo Vargas como apoderada con facultades de disposicion."}, "expected": "keep"}
+{"id": "rd-27", "point": "redundant_page", "input": {"purpose": "quien administra Inversiones Delta y desde cuando", "known": "Registro panameno: socio unico y representante legal Mario Reyes Castillo desde 2011.", "text": "Mario Reyes Castillo nego en una entrevista tener vinculacion alguna con Inversiones Delta y atribuyo la coincidencia a un homonimo."}, "expected": "keep"}
+{"id": "rd-28", "point": "redundant_page", "input": {"purpose": "quien administra Inversiones Delta y desde cuando", "known": "Registro panameno: socio unico y representante legal Mario Reyes Castillo desde 2011.", "text": "Politica de privacidad del portal del registro. Los datos consultados se conservan durante doce meses a efectos estadisticos."}, "expected": "drop"}
+{"id": "rd-29", "point": "redundant_page", "input": {"purpose": "que articulos de la Ley 6132 anulo la sentencia TC/1148/25", "known": "El fallo de TC/1148/25 declara inconstitucionales los articulos 34, 35 y 36.", "text": "El Tribunal Constitucional declaro inconstitucionales los articulos 34, 35 y 36 de la Ley 6132 en su sentencia TC/1148/25."}, "expected": "drop"}
+{"id": "rd-30", "point": "redundant_page", "input": {"purpose": "que articulos de la Ley 6132 anulo la sentencia TC/1148/25", "known": "El fallo de TC/1148/25 declara inconstitucionales los articulos 34, 35 y 36.", "text": "El voto disidente del magistrado Peralta sostiene que el articulo 35 debio mantenerse por afectar solo a la difamacion con dolo probado."}, "expected": "keep"}
+{"id": "rd-31", "point": "redundant_page", "input": {"purpose": "que articulos de la Ley 6132 anulo la sentencia TC/1148/25", "known": "El fallo de TC/1148/25 declara inconstitucionales los articulos 34, 35 y 36.", "text": "Resumen para el lector: el alto tribunal tumbo tres articulos de la vieja ley de expresion del pensamiento, los numerados 34, 35 y 36."}, "expected": "drop"}
+{"id": "rd-32", "point": "redundant_page", "input": {"purpose": "que articulos de la Ley 6132 anulo la sentencia TC/1148/25 y cuales siguen vigentes", "known": "El fallo de TC/1148/25 declara inconstitucionales los articulos 34, 35 y 36.", "text": "Tras la sentencia, el capitulo sobre injuria, articulos 44 a 47, conserva su vigencia y sigue siendo aplicable."}, "expected": "keep"}
+{"id": "rd-33", "point": "redundant_page", "input": {"purpose": "sanciones abiertas contra Transportes Sur", "known": "Resolucion 118-25 del boletin 41 de 2025: revocada la licencia de transporte.", "text": "La Direccion General de Transporte revoco mediante la resolucion 118-25 la licencia de Transportes Sur S.A."}, "expected": "drop"}
+{"id": "rd-34", "point": "redundant_page", "input": {"purpose": "sanciones abiertas contra Transportes Sur", "known": "Resolucion 118-25 del boletin 41 de 2025: revocada la licencia de transporte.", "text": "Transportes Sur presento recurso de alzada contra la resolucion 118-25 el 9 de septiembre, y el recurso esta pendiente de resolucion."}, "expected": "keep"}
+{"id": "rd-35", "point": "redundant_page", "input": {"purpose": "sanciones abiertas contra Transportes Sur", "known": "Resolucion 118-25 del boletin 41 de 2025: revocada la licencia de transporte.", "text": "Transportes Sur opera 140 autobuses en seis rutas interurbanas y transporta unos 30.000 pasajeros al mes."}, "expected": "keep"}
+{"id": "rd-36", "point": "redundant_page", "input": {"purpose": "corroborar en una segunda fuente la revocacion de la licencia de Transportes Sur", "known": "Un diario local dice que le revocaron la licencia.", "text": "Boletin Oficial num. 41 de 2025, resolucion 118-25 de la Direccion General de Transporte: se revoca la licencia de Transportes Sur S.A."}, "expected": "keep"}
+{"id": "rd-37", "point": "redundant_page", "input": {"purpose": "cuantos empleados declara Constructora Norte", "known": "Memoria 2024: 412 empleados.", "text": "La memoria del ejercicio 2024 de Constructora Norte declara una plantilla media de 412 empleados."}, "expected": "drop"}
+{"id": "rd-38", "point": "redundant_page", "input": {"purpose": "cuantos empleados declara Constructora Norte y como evoluciono la plantilla", "known": "Memoria 2024: 412 empleados.", "text": "En el ejercicio 2023 la plantilla media declarada fue de 380 empleados."}, "expected": "keep"}
+{"id": "rd-39", "point": "redundant_page", "input": {"purpose": "la cifra mas reciente de plantilla de Constructora Norte", "known": "Una nota de prensa de julio de 2024 habla de unos 400 empleados.", "text": "La memoria depositada el 30 de junio de 2025, correspondiente al ejercicio 2024, declara 412 empleados."}, "expected": "keep"}
+{"id": "rd-40", "point": "redundant_page", "input": {"purpose": "domicilio social de Aristo Global", "known": "Registro mercantil: calle 50, torre BICSA, piso 32, Ciudad de Panama.", "text": "Aristo Global Corp. tiene su domicilio en la torre BICSA, calle 50, piso 32, de la capital panamena."}, "expected": "drop"}
+{"id": "rd-41", "point": "redundant_page", "input": {"purpose": "domicilio social de Aristo Global", "known": "Registro mercantil: calle 50, torre BICSA, piso 32, Ciudad de Panama.", "text": "En la misma direccion, piso 32 de la torre BICSA, figuran domiciliadas otras 214 sociedades, todas ellas gestionadas por el mismo agente residente."}, "expected": "keep"}
+{"id": "rd-42", "point": "redundant_page", "input": {"purpose": "domicilio social de Aristo Global", "known": "Registro mercantil: calle 50, torre BICSA, piso 32, Ciudad de Panama.", "text": "Como llegar a la torre BICSA: lineas de metro 1 y 2, estacion Via Argentina. Aparcamiento en los niveles menos uno y menos dos."}, "expected": "keep"}
+{"id": "rd-43", "point": "redundant_page", "input": {"purpose": "si Aristo Global figura en listas de sanciones", "known": "Lista SDN de la OFAC: no aparece.", "text": "La consulta a la lista SDN del Tesoro estadounidense no devuelve coincidencias para Aristo Global."}, "expected": "drop"}
+{"id": "rd-44", "point": "redundant_page", "input": {"purpose": "si Aristo Global figura en listas de sanciones, con el dato mas actualizado", "known": "Consulta a la lista SDN de la OFAC hecha el 3 de febrero de 2026: no aparece.", "text": "Actualizacion de la lista SDN publicada el 18 de marzo de 2026: se incorporan 41 entidades, entre ellas Aristo Global Corp."}, "expected": "keep"}
+{"id": "rd-45", "point": "redundant_page", "input": {"purpose": "si Aristo Global figura en listas de sanciones", "known": "Lista SDN de la OFAC: no aparece.", "text": "La lista consolidada de sanciones de la Union Europea tampoco recoge a Aristo Global Corp. ni a sus administradores."}, "expected": "keep"}
+{"id": "rd-46", "point": "redundant_page", "input": {"purpose": "que acordo la junta de 3 de marzo sobre la venta del inmueble", "known": "Acta de 3 de marzo, punto cuarto: se autoriza la venta del inmueble de calle Mercedes 45.", "text": "En la junta del 3 de marzo se aprobo autorizar la venta del inmueble situado en la calle Mercedes 45."}, "expected": "drop"}
+{"id": "rd-47", "point": "redundant_page", "input": {"purpose": "que acordo la junta de 3 de marzo sobre la venta del inmueble", "known": "Acta de 3 de marzo, punto cuarto: se autoriza la venta del inmueble de calle Mercedes 45.", "text": "Dos socios minoritarios hicieron constar su voto en contra del punto cuarto y anunciaron la impugnacion del acuerdo."}, "expected": "keep"}
+{"id": "rd-48", "point": "redundant_page", "input": {"purpose": "que acordo la junta de 3 de marzo sobre la venta del inmueble", "known": "Acta de 3 de marzo, punto cuarto: se autoriza la venta del inmueble de calle Mercedes 45.", "text": "El inmueble de calle Mercedes 45 tiene 142 metros cuadrados y fue construido en 1998, segun el catastro."}, "expected": "keep"}
+{"id": "rd-49", "point": "redundant_page", "input": {"purpose": "quienes fueron los patronos fundadores de la fundacion", "known": "Escritura de 2009, clausula sexta: Ana Melo, Luis Peralta y la sociedad Delta.", "text": "La fundacion se constituyo en 2009 y sus patronos fundadores fueron Ana Melo, Luis Peralta y la sociedad Delta, segun la escritura."}, "expected": "drop"}
+{"id": "rd-50", "point": "redundant_page", "input": {"purpose": "quienes fueron los patronos fundadores de la fundacion", "known": "Escritura de 2009, clausula sexta: Ana Melo, Luis Peralta y la sociedad Delta.", "text": "Luis Peralta causo baja como patrono en 2014 y fue sustituido por su hija, segun la inscripcion de modificacion del patronato."}, "expected": "keep"}

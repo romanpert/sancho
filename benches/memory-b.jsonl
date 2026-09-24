@@ -1,0 +1,108 @@
+# Agent memory, second batch: the cases that take memory_write and recall to 50 (70 cases).
+#
+# Only the new cases live here; the original 46 stay in `memory.jsonl` so the run of
+# 2026-09-24 and its recording stay reproducible as published. memory_collision is not
+# extended here: it has four labels rather than two, its `duplicate` branch never fired at the
+# shipped thresholds, and a batch that only adds cases would not settle that. It gets its own
+# treatment once the binary points have their precision targets.
+#
+# memory_write is deliberately harder than the first batch, which scored 16/16. The whole
+# difficulty sits in one distinction, because it is the one that turns a memory store into a
+# slow copy of the repository:
+#
+#   store: something the agent learned by doing, that it cannot get back by re-reading a
+#          source it already holds. Operational constraints, the reason behind a decision,
+#          a negative result and why, a standing instruction from the client.
+#   skip:  anything re-derivable. A literal quotation from a document already in the volume,
+#          a fact about code the agent can grep, restatements of the task, progress narration,
+#          transient state, and general world knowledge.
+#
+# The trap cases are facts that are true, durable, specific and useless to store, because the
+# source is already in hand (mw-25, mw-31, mw-37, mw-43). The mirror traps are facts that
+# sound like chatter but encode a constraint that cost real work to learn (mw-18, mw-30,
+# mw-40).
+#
+# recall is the same idea pointed the other way. The first batch was 14/14 with obvious cases;
+# these turn on the two hard families the point actually faces:
+#
+#   look: a turn that reads as self-contained but silently depends on something agreed
+#         earlier - a format, a preference, an exclusion, a decision already taken.
+#   skip: a turn that sounds like it needs history but carries its own context inline, and
+#         pure transformation of text the user just supplied.
+#
+# rc-39 is a declared negative control: it turns on comparing two dates (paper Section 5.3).
+#
+# Annotator 1 (author) labelled every case before any decision was run; Annotator 2 is a
+# separate generative model, blind to that label and to the evaluator's answer. Agreement is
+# reported in the results directory. Two annotators, one of them a model, is not the two
+# independent humans the literature assumes, and the paper says so where it uses these.
+{"id": "mw-17", "point": "memory_write", "input": {"fact": "El portal de compras publicas corta la sesion a los 10 minutos y hay que volver a resolver el captcha; conviene descargar los expedientes de tanda en tanda."}, "expected": "store"}
+{"id": "mw-18", "point": "memory_write", "input": {"fact": "El buscador del registro no encuentra nada si el nombre lleva tilde; hay que escribirlo sin acentos."}, "expected": "store"}
+{"id": "mw-19", "point": "memory_write", "input": {"fact": "El cliente no quiere que aparezca el nombre de los menores en ninguna parte del informe, ni siquiera con iniciales."}, "expected": "store"}
+{"id": "mw-20", "point": "memory_write", "input": {"fact": "Descartada la via del registro de fundaciones: solo publica altas desde 2015 y la nuestra es de 2009."}, "expected": "store"}
+{"id": "mw-21", "point": "memory_write", "input": {"fact": "Estoy abriendo el tercer expediente de la lista."}, "expected": "skip"}
+{"id": "mw-22", "point": "memory_write", "input": {"fact": "Las sociedades anonimas suelen tener un consejo de administracion."}, "expected": "skip"}
+{"id": "mw-23", "point": "memory_write", "input": {"fact": "La hemeroteca del diario cobra por articulo a partir del quinto del mes; los cuatro primeros son gratis."}, "expected": "store"}
+{"id": "mw-24", "point": "memory_write", "input": {"fact": "Queda pendiente revisar el apartado de antecedentes."}, "expected": "skip"}
+{"id": "mw-25", "point": "memory_write", "input": {"fact": "El articulo 34 de la Ley 6132 tipificaba la difamacion contra funcionarios publicos con pena de prision.", "source": "Texto consolidado de la Ley 6132, descargado en el volumen del trabajo como ley-6132.pdf"}, "expected": "skip"}
+{"id": "mw-26", "point": "memory_write", "input": {"fact": "Mario Reyes y Mario Reyes Castillo son la misma persona: coinciden cedula y fecha de nacimiento en las dos fichas."}, "expected": "store"}
+{"id": "mw-27", "point": "memory_write", "input": {"fact": "Hay bastante material publicado sobre el caso."}, "expected": "skip"}
+{"id": "mw-28", "point": "memory_write", "input": {"fact": "El portal del Tribunal devuelve el PDF con el texto en imagen; hay que pasarle OCR antes de poder citar literal."}, "expected": "store"}
+{"id": "mw-29", "point": "memory_write", "input": {"fact": "He terminado de leer el acta."}, "expected": "skip"}
+{"id": "mw-30", "point": "memory_write", "input": {"fact": "La API del registro contesta 200 con un cuerpo vacio cuando no encuentra nada, en vez de 404; hay que mirar el cuerpo y no el codigo."}, "expected": "store"}
+{"id": "mw-31", "point": "memory_write", "input": {"fact": "La clase Squire expone triage_page, triage_redundant y verify_citation.", "source": "El codigo del paquete, en el repositorio que el agente puede leer"}, "expected": "skip"}
+{"id": "mw-32", "point": "memory_write", "input": {"fact": "El cliente prefiere las cifras en millones con un decimal, no en unidades."}, "expected": "store"}
+{"id": "mw-33", "point": "memory_write", "input": {"fact": "Panama es un pais de America Central."}, "expected": "skip"}
+{"id": "mw-34", "point": "memory_write", "input": {"fact": "Descartado el expediente 2019-4471: es un homonimo, otra cedula y otra provincia."}, "expected": "store"}
+{"id": "mw-35", "point": "memory_write", "input": {"fact": "Voy a probar ahora con el buscador de la hemeroteca."}, "expected": "skip"}
+{"id": "mw-36", "point": "memory_write", "input": {"fact": "El boletin oficial publica los jueves; lo del miercoles no esta todavia y no sirve de nada recargarlo."}, "expected": "store"}
+{"id": "mw-37", "point": "memory_write", "input": {"fact": "El acta de 3 de marzo tiene once folios y el orden del dia tiene seis puntos.", "source": "Acta de 3 de marzo, ya descargada en el volumen del trabajo"}, "expected": "skip"}
+{"id": "mw-38", "point": "memory_write", "input": {"fact": "Las dos fuentes dan 1.240 viviendas, asi que la cifra esta contrastada y se puede usar sin reservas."}, "expected": "store"}
+{"id": "mw-39", "point": "memory_write", "input": {"fact": "La conexion va lenta ahora mismo."}, "expected": "skip"}
+{"id": "mw-40", "point": "memory_write", "input": {"fact": "En este registro el campo socio unico aparece vacio cuando hay mas de un socio, no cuando no hay ninguno; un vacio no significa que falte el dato."}, "expected": "store"}
+{"id": "mw-41", "point": "memory_write", "input": {"fact": "Hay que investigar tambien a la matriz."}, "expected": "skip"}
+{"id": "mw-42", "point": "memory_write", "input": {"fact": "El telefono del juzgado 12 que figura en la web esta desconectado; el que funciona es el de la sede judicial, extension 214."}, "expected": "store"}
+{"id": "mw-43", "point": "memory_write", "input": {"fact": "El boletin num. 41 de 2025 contiene la resolucion 118-25 en la pagina 7.", "source": "Boletin oficial num. 41 de 2025, ya descargado en el volumen del trabajo"}, "expected": "skip"}
+{"id": "mw-44", "point": "memory_write", "input": {"fact": "El cliente acepto que el informe salga sin el apartado patrimonial si no se consigue el registro de la propiedad a tiempo."}, "expected": "store"}
+{"id": "mw-45", "point": "memory_write", "input": {"fact": "Un informe suele tener introduccion, desarrollo y conclusiones."}, "expected": "skip"}
+{"id": "mw-46", "point": "memory_write", "input": {"fact": "El proxy de egreso bloquea todo lo que no este en la lista blanca, asi que las descargas hay que pedirlas por la herramienta y no con curl."}, "expected": "store"}
+{"id": "mw-47", "point": "memory_write", "input": {"fact": "Estoy a la mitad del segundo boletin."}, "expected": "skip"}
+{"id": "mw-48", "point": "memory_write", "input": {"fact": "La memoria de 2023 de Constructora Norte no esta en el portal de la empresa pero si en el deposito de cuentas del registro mercantil."}, "expected": "store"}
+{"id": "mw-49", "point": "memory_write", "input": {"fact": "Conviene ser riguroso con las fuentes."}, "expected": "skip"}
+{"id": "mw-50", "point": "memory_write", "input": {"fact": "Buscar por el numero de expediente da resultados; buscar por el nombre de la empresa no, porque el indice solo cubre expedientes desde 2020."}, "expected": "store"}
+{"id": "rc-15", "point": "recall", "input": {"turn": "Redactalo como acordamos."}, "expected": "look"}
+{"id": "rc-16", "point": "recall", "input": {"turn": "Anade la cifra al informe, con el formato de siempre."}, "expected": "look"}
+{"id": "rc-17", "point": "recall", "input": {"turn": "Descarta ese como hicimos con el anterior."}, "expected": "look"}
+{"id": "rc-18", "point": "recall", "input": {"turn": "Pasa a la siguiente linea de investigacion."}, "expected": "look"}
+{"id": "rc-19", "point": "recall", "input": {"turn": "No repitas el error de la vez pasada con las tildes."}, "expected": "look"}
+{"id": "rc-20", "point": "recall", "input": {"turn": "Cuentame otra vez por que lo dejamos fuera."}, "expected": "look"}
+{"id": "rc-21", "point": "recall", "input": {"turn": "Escribe el apartado de conclusiones."}, "expected": "look"}
+{"id": "rc-22", "point": "recall", "input": {"turn": "Usa la fuente oficial y no la prensa, ya sabes cual."}, "expected": "look"}
+{"id": "rc-23", "point": "recall", "input": {"turn": "Dale, con eso ya puedes cerrar el informe."}, "expected": "look"}
+{"id": "rc-24", "point": "recall", "input": {"turn": "Comprueba si esa empresa tambien aparece en la lista que revisamos."}, "expected": "look"}
+{"id": "rc-25", "point": "recall", "input": {"turn": "Hazlo igual pero para 2023."}, "expected": "look"}
+{"id": "rc-26", "point": "recall", "input": {"turn": "Quita del borrador lo que el cliente pidio que no saliera."}, "expected": "look"}
+{"id": "rc-27", "point": "recall", "input": {"turn": "Retoma la busqueda en el registro panameno."}, "expected": "look"}
+{"id": "rc-28", "point": "recall", "input": {"turn": "Ese dato ya lo teniamos, no lo busques otra vez."}, "expected": "look"}
+{"id": "rc-29", "point": "recall", "input": {"turn": "Aplica la misma exclusion a los homonimos."}, "expected": "look"}
+{"id": "rc-30", "point": "recall", "input": {"turn": "Por que descartaste la segunda fuente?"}, "expected": "look"}
+{"id": "rc-31", "point": "recall", "input": {"turn": "Sigue con lo que quedaba pendiente."}, "expected": "look"}
+{"id": "rc-32", "point": "recall", "input": {"turn": "Manten el criterio que usamos para las cifras."}, "expected": "look"}
+{"id": "rc-33", "point": "recall", "input": {"turn": "Cuenta cuantas palabras tiene este parrafo: El censo preliminar registra 1.240 viviendas con danos en cuatro municipios."}, "expected": "skip"}
+{"id": "rc-34", "point": "recall", "input": {"turn": "Pasa a mayusculas estos nombres: aristo global, inversiones delta, transportes sur."}, "expected": "skip"}
+{"id": "rc-35", "point": "recall", "input": {"turn": "Que significa la sigla OFAC?"}, "expected": "skip"}
+{"id": "rc-36", "point": "recall", "input": {"turn": "Escribe una expresion regular que valide un numero de cedula dominicana de 11 digitos con guiones."}, "expected": "skip"}
+{"id": "rc-37", "point": "recall", "input": {"turn": "Corrige la ortografia de este texto que te pego: La comision informo que el sensó preliminar registro mil doscientas cuarenta viviendas."}, "expected": "skip"}
+{"id": "rc-38", "point": "recall", "input": {"turn": "Explicame en general la diferencia entre una sociedad anonima y una de responsabilidad limitada."}, "expected": "skip"}
+{"id": "rc-39", "point": "recall", "input": {"turn": "Cual de estas dos fechas es anterior, 7 de noviembre de 2025 o 18 de noviembre de 2025?"}, "expected": "skip"}
+{"id": "rc-40", "point": "recall", "input": {"turn": "Ordena de mayor a menor: 18,4 millones, 2,1 millones, 7,9 millones."}, "expected": "skip"}
+{"id": "rc-41", "point": "recall", "input": {"turn": "Traduce al ingles: La resolucion 118-25 revoca la licencia de la empresa."}, "expected": "skip"}
+{"id": "rc-42", "point": "recall", "input": {"turn": "Dame tres sinonimos de incumplimiento."}, "expected": "skip"}
+{"id": "rc-43", "point": "recall", "input": {"turn": "Resume en dos frases este parrafo: El Tribunal declaro inconstitucionales los articulos 34, 35 y 36 de la Ley 6132, por vulnerar la libertad de expresion, y mantuvo vigente el resto del texto."}, "expected": "skip"}
+{"id": "rc-44", "point": "recall", "input": {"turn": "Como se escribe correctamente, haber o a ver?"}, "expected": "skip"}
+{"id": "rc-45", "point": "recall", "input": {"turn": "Investiga a Constructora Norte: quien la administra, desde cuando y si tiene sanciones. Empieza por el registro mercantil."}, "expected": "skip"}
+{"id": "rc-46", "point": "recall", "input": {"turn": "Busca la sentencia TC/1148/25 en el portal del Tribunal Constitucional dominicano y dime el importe de la indemnizacion."}, "expected": "skip"}
+{"id": "rc-47", "point": "recall", "input": {"turn": "Convierte esta tabla a markdown: Empresa, Ano, Importe; Norte, 2024, 18,4; Sur, 2024, 7,9."}, "expected": "skip"}
+{"id": "rc-48", "point": "recall", "input": {"turn": "Dime si esta frase esta en voz pasiva: La licencia fue revocada por la Direccion de Transporte."}, "expected": "skip"}
+{"id": "rc-49", "point": "recall", "input": {"turn": "Vuelve a intentarlo con lo que ya sabes del caso."}, "expected": "look"}
+{"id": "rc-50", "point": "recall", "input": {"turn": "Cierra la linea que dijimos que estaba agotada."}, "expected": "look"}

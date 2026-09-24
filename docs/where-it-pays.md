@@ -340,10 +340,24 @@ Each of these is specified enough that a disagreement becomes a measurement.
    depend on the arm's draw, and the comparison stops being about the lever. Both arms must
    be driven through the same fixed document sequence, so that the only remaining difference
    is what the squire removes from it.
-2. **Fifty cases and a second annotator per new point**, then thresholds set the way Google
-   sets them: per point, to a target precision, reported as recall@X. Prediction: the
-   86/88-against-78/88 gap closes to within two decisions without any loss in the safe
-   direction.
+2. **Done for the six binary points on 2026-09-24, and it moved no threshold.** 212 harder
+   cases take them to 50 each; a blind second annotator agrees with the author on 97 %,
+   kappa 0.96, and the evaluator is as close to the blind annotator as to the author. The
+   threshold half of this item turned out to be under-specified: requiring the precision
+   *lower bound* to clear the target, which is what makes a target falsifiable, imposes a
+   sample-size floor of 16 acted cases for 80 %, 35 for 90 % and 73 for 95 %. **Fifty cases
+   per point buys an 80 % target and nothing above it**, three of six points reach it, and
+   in those three the derived threshold matches the shipped one out of sample. The gap the
+   thresholds cost is now measured on hard cases: 190 of 212 against 202 at a plain 0.5 cut,
+   every loss in the safe direction. See `docs/results/2026-09-24-fifty/`.
+
+   The prediction recorded in advance was "the 86/88-against-78/88 gap closes to within two
+   decisions without any loss in the safe direction". **Half right, and the wrong half is the
+   informative one.** The gap did close on the original cases, to three decisions, but that
+   was the redundant-gate fix and not a tuning pass. On cases written to be hard it reopened
+   to twelve, and no threshold could be moved to close it, because the sample cannot support
+   a target strict enough to justify the move. Closing that gap is not a labelling afternoon:
+   at a balanced label mix it is about 70 cases per point for a 90 % target and 146 for 95 %.
 3. **Deferred labelling in production.** Sample a fraction of *confident* decisions and
    re-label them. AWS's shipped pattern for exactly this is to review everything below
    threshold **and** randomly sample 5 % above it, as a continuing audit of the threshold

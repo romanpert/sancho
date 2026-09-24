@@ -1,0 +1,85 @@
+# The extraction gate, second batch: the cases that take extract_gate to 50 (34 cases).
+#
+# Only the new cases live here; the original 36 stay in `graph-build.jsonl` so the run of
+# 2026-09-24 and its recording stay reproducible as published. `edge` is not extended here:
+# it has three labels and an abstention band, and its one confident error was a literal
+# reading of a ruling rather than a threshold problem, so more cases at the same shape would
+# not move it. It gets its own treatment after the binary points have precision targets.
+#
+# The first batch scored 15/16 and its skips were mostly obvious furniture: navigation bars,
+# cookie notices, tables of contents. Real crawls are not that kind. This batch keeps the
+# same question and makes both sides harder, in four families:
+#
+#  A. Boilerplate that nonetheless carries an instance. A copyright footer naming a company,
+#     a breadcrumb naming a ruling, a form label prefilled with a name, an email signature.
+#     The question is whether an instance of the wanted kinds is present, not whether the
+#     chunk is prose. These are `extract`.
+#  B. Fluent prose with no instance at all. Legal doctrine, methodology, an editorial about
+#     corporate structures in general. It reads like the target and contains nothing to pull
+#     out. These are `skip`.
+#  C. Wrong kind. A chunk dense with instances of a kind nobody asked for: dates and amounts
+#     when the target is people and companies, place names when the target is rulings. `skip`.
+#  D. One instance, buried. A long administrative preamble with a single name in the last
+#     clause. `extract`, because one edge is why the gate exists.
+#
+# `looking_for` is varied beyond the two targets of the first batch, so that the point is not
+# measured only on the two domains it was written against.
+#
+# RELABELLED after the first run, on the question's own criteria and not because the model
+# disagreed: eg-41 was authored as `skip` because it looked like a table of attributes. The
+# question asks whether the chunk "names at least one instance and says something about it",
+# and a cadastral reference names one specific property and the chunk then states its
+# surface, its year and its share. It is an `extract`. Published both ways in
+# `docs/results/2026-09-24-fifty/`: 29/34 before the correction and 30/34 after.
+#
+# eg-47 was left alone deliberately, although the evaluator missed it at confidence 0.68. It
+# is a breadcrumb naming a resolution number and no company or person, and the question's
+# `false` side lists section paths explicitly. The label is arguable in both directions, and
+# moving an arguable label to match the model is how a bench stops measuring anything.
+#
+# DISPUTED, recorded and not resolved: the blind second annotator also read eg-47 as `skip`,
+# and read eg-25 and eg-35 as `skip` against the author's `extract`. All three are breadcrumbs
+# or section headers that name an instance, which is family A above and the family this point
+# disagrees with itself about: kappa between the two annotators is 0.82 here, the second
+# lowest of the six points. That is a question-definition problem rather than a threshold one,
+# and more cases of the same shape will not settle it. See
+# `docs/results/2026-09-24-fifty/README.md` section 4.
+#
+# Annotator 1 (author) labelled every case before any decision was run; Annotator 2 is a
+# separate generative model, blind to that label and to the evaluator's answer. Agreement is
+# reported in the results directory, and the paper says where it uses these numbers that one
+# annotator is a model and this is not two independent humans.
+{"id": "eg-17", "point": "extract_gate", "input": {"looking_for": "personas y empresas, y la relacion entre ellas", "kinds": ["persona", "empresa", "relacion"], "chunk": "Inicio > Empresas > Panama > Inversiones Delta S.A. > Ficha registral"}, "expected": "extract"}
+{"id": "eg-18", "point": "extract_gate", "input": {"looking_for": "personas y empresas, y la relacion entre ellas", "kinds": ["persona", "empresa", "relacion"], "chunk": "La personalidad juridica de las sociedades mercantiles es independiente de la de sus socios. Esta separacion admite excepciones cuando se acredita un uso abusivo de la forma societaria."}, "expected": "skip"}
+{"id": "eg-19", "point": "extract_gate", "input": {"looking_for": "personas y empresas, y la relacion entre ellas", "kinds": ["persona", "empresa", "relacion"], "chunk": "Atentamente, Ana Melo Vargas. Directora de Cumplimiento. Caribe Holding S.A. Telefono 507 264 0000."}, "expected": "extract"}
+{"id": "eg-20", "point": "extract_gate", "input": {"looking_for": "personas y empresas, y la relacion entre ellas", "kinds": ["persona", "empresa", "relacion"], "chunk": "12/03/2026. 14/03/2026. 17/03/2026. 21/03/2026. Importes: 18.400.000; 7.900.000; 2.100.000. Total del ejercicio: 28.400.000."}, "expected": "skip"}
+{"id": "eg-21", "point": "extract_gate", "input": {"looking_for": "personas y empresas, y la relacion entre ellas", "kinds": ["persona", "empresa", "relacion"], "chunk": "Visto el expediente administrativo incoado en virtud de lo dispuesto en el articulo 41 del reglamento, y cumplidos los tramites de audiencia y de informe preceptivo previstos en la norma, se resuelve inscribir la transmision a favor de Mario Reyes Castillo."}, "expected": "extract"}
+{"id": "eg-22", "point": "extract_gate", "input": {"looking_for": "personas y empresas, y la relacion entre ellas", "kinds": ["persona", "empresa", "relacion"], "chunk": "Metodologia. Los datos se recogieron mediante consulta directa a los registros publicos disponibles en linea. Se descartaron las fichas sin numero de inscripcion y aquellas cuyo estado figuraba como provisional."}, "expected": "skip"}
+{"id": "eg-23", "point": "extract_gate", "input": {"looking_for": "personas y empresas, y la relacion entre ellas", "kinds": ["persona", "empresa", "relacion"], "chunk": "Razon social: [Aristo Global Corp.] Representante: [Luis Peralta] Cargo: [Apoderado] Fecha: [ ] Firma: [ ]"}, "expected": "extract"}
+{"id": "eg-24", "point": "extract_gate", "input": {"looking_for": "personas y empresas, y la relacion entre ellas", "kinds": ["persona", "empresa", "relacion"], "chunk": "Resultados anteriores 1 2 3 4 5 Siguiente. Mostrando 21 a 40 de 312 resultados. Ordenar por: relevancia, fecha, nombre."}, "expected": "skip"}
+{"id": "eg-25", "point": "extract_gate", "input": {"looking_for": "sentencias, articulos de ley y su resultado", "kinds": ["sentencia", "articulo", "resultado"], "chunk": "Inicio > Jurisprudencia > 2025 > TC/1148/25"}, "expected": "extract"}
+{"id": "eg-26", "point": "extract_gate", "input": {"looking_for": "sentencias, articulos de ley y su resultado", "kinds": ["sentencia", "articulo", "resultado"], "chunk": "El control difuso de constitucionalidad permite a cualquier juez inaplicar una norma que considere contraria a la Constitucion, sin que ello suponga su expulsion del ordenamiento."}, "expected": "skip"}
+{"id": "eg-27", "point": "extract_gate", "input": {"looking_for": "sentencias, articulos de ley y su resultado", "kinds": ["sentencia", "articulo", "resultado"], "chunk": "Descargar PDF (2,4 MB). Compartir. Imprimir. Citar esta resolucion. Version accesible. Volver al listado."}, "expected": "skip"}
+{"id": "eg-28", "point": "extract_gate", "input": {"looking_for": "sentencias, articulos de ley y su resultado", "kinds": ["sentencia", "articulo", "resultado"], "chunk": "Considerando que el articulo 49 de la Constitucion consagra la libertad de expresion, y visto el precedente sentado en TC/0075/16, procede acoger parcialmente la accion y declarar no conforme el articulo 36."}, "expected": "extract"}
+{"id": "eg-29", "point": "extract_gate", "input": {"looking_for": "sentencias, articulos de ley y su resultado", "kinds": ["sentencia", "articulo", "resultado"], "chunk": "Santo Domingo, Santiago, La Vega, San Cristobal, Puerto Plata, La Romana, San Pedro de Macoris."}, "expected": "skip"}
+{"id": "eg-30", "point": "extract_gate", "input": {"looking_for": "sentencias, articulos de ley y su resultado", "kinds": ["sentencia", "articulo", "resultado"], "chunk": "La accion de amparo procede contra todo acto u omision de una autoridad publica o de un particular que lesione derechos fundamentales. Su tramitacion es preferente y sumaria."}, "expected": "skip"}
+{"id": "eg-31", "point": "extract_gate", "input": {"looking_for": "sentencias, articulos de ley y su resultado", "kinds": ["sentencia", "articulo", "resultado"], "chunk": "Expediente num. TC-05-2024-0311. Recurrente: Editora del Caribe. Recurrido: Ministerio Publico. Materia: revision constitucional de decision jurisdiccional. Estado: fallado."}, "expected": "extract"}
+{"id": "eg-32", "point": "extract_gate", "input": {"looking_for": "sentencias, articulos de ley y su resultado", "kinds": ["sentencia", "articulo", "resultado"], "chunk": "Aviso legal. El contenido de esta sede tiene caracter informativo y no sustituye a la publicacion oficial. Los textos con valor autentico son los publicados en la Gaceta Oficial."}, "expected": "skip"}
+{"id": "eg-33", "point": "extract_gate", "input": {"looking_for": "adjudicaciones publicas: organismo, adjudicatario e importe", "kinds": ["organismo", "empresa", "importe"], "chunk": "Expediente 2024/0417. Organo de contratacion: Ministerio de Obras Publicas. Adjudicatario: Constructora Norte S.R.L. Importe de adjudicacion: 8.200.000."}, "expected": "extract"}
+{"id": "eg-34", "point": "extract_gate", "input": {"looking_for": "adjudicaciones publicas: organismo, adjudicatario e importe", "kinds": ["organismo", "empresa", "importe"], "chunk": "Los procedimientos de contratacion publica se rigen por los principios de publicidad, concurrencia, transparencia e igualdad de trato entre licitadores."}, "expected": "skip"}
+{"id": "eg-35", "point": "extract_gate", "input": {"looking_for": "adjudicaciones publicas: organismo, adjudicatario e importe", "kinds": ["organismo", "empresa", "importe"], "chunk": "Perfil del contratante - Ministerio de Obras Publicas"}, "expected": "extract"}
+{"id": "eg-36", "point": "extract_gate", "input": {"looking_for": "adjudicaciones publicas: organismo, adjudicatario e importe", "kinds": ["organismo", "empresa", "importe"], "chunk": "Plazo de presentacion de ofertas: 15 dias naturales. Garantia provisional: 2 por ciento. Criterio de adjudicacion: precio. Forma de pago: mensual contra certificacion."}, "expected": "skip"}
+{"id": "eg-37", "point": "extract_gate", "input": {"looking_for": "adjudicaciones publicas: organismo, adjudicatario e importe", "kinds": ["organismo", "empresa", "importe"], "chunk": "Habiendose cumplido cuantos tramites exige la normativa vigente en materia de contratacion del sector publico, y a la vista del informe tecnico de valoracion obrante en el expediente, se adjudica el contrato a Transportes Sur S.A."}, "expected": "extract"}
+{"id": "eg-38", "point": "extract_gate", "input": {"looking_for": "adjudicaciones publicas: organismo, adjudicatario e importe", "kinds": ["organismo", "empresa", "importe"], "chunk": "Preguntas frecuentes. Como me doy de alta como licitador? Que hago si olvide mi contrasena? Puedo presentar una oferta fuera de plazo?"}, "expected": "skip"}
+{"id": "eg-39", "point": "extract_gate", "input": {"looking_for": "inmuebles y sus titulares", "kinds": ["inmueble", "persona", "empresa"], "chunk": "Finca registral 12.447, sita en calle Mercedes 45, inscrita a favor de Inversiones Delta S.A. por titulo de compraventa."}, "expected": "extract"}
+{"id": "eg-40", "point": "extract_gate", "input": {"looking_for": "inmuebles y sus titulares", "kinds": ["inmueble", "persona", "empresa"], "chunk": "La inscripcion en el Registro de la Propiedad es voluntaria pero produce efectos frente a terceros. La falta de inscripcion no invalida el negocio entre las partes."}, "expected": "skip"}
+{"id": "eg-41", "point": "extract_gate", "input": {"looking_for": "inmuebles y sus titulares", "kinds": ["inmueble", "persona", "empresa"], "chunk": "Superficie: 142 metros cuadrados. Ano de construccion: 1998. Referencia catastral: 9872023VH5797S0001WX. Coeficiente de participacion: 3,45 por ciento."}, "expected": "extract"}
+{"id": "eg-42", "point": "extract_gate", "input": {"looking_for": "inmuebles y sus titulares", "kinds": ["inmueble", "persona", "empresa"], "chunk": "Nota simple informativa expedida a solicitud de Ana Melo Vargas respecto de la finca 12.447."}, "expected": "extract"}
+{"id": "eg-43", "point": "extract_gate", "input": {"looking_for": "sanciones administrativas y a quien se imponen", "kinds": ["empresa", "persona", "sancion"], "chunk": "Resolucion 118-25: se revoca la licencia de transporte de Transportes Sur S.A. por incumplimiento reiterado del articulo 22."}, "expected": "extract"}
+{"id": "eg-44", "point": "extract_gate", "input": {"looking_for": "sanciones administrativas y a quien se imponen", "kinds": ["empresa", "persona", "sancion"], "chunk": "El procedimiento sancionador se inicia siempre de oficio y debe resolverse en el plazo maximo de seis meses, transcurrido el cual se produce la caducidad."}, "expected": "skip"}
+{"id": "eg-45", "point": "extract_gate", "input": {"looking_for": "sanciones administrativas y a quien se imponen", "kinds": ["empresa", "persona", "sancion"], "chunk": "No se han encontrado resultados para su busqueda. Revise los criterios introducidos o amplie el rango de fechas."}, "expected": "skip"}
+{"id": "eg-46", "point": "extract_gate", "input": {"looking_for": "sanciones administrativas y a quien se imponen", "kinds": ["empresa", "persona", "sancion"], "chunk": "En el ejercicio 2025 se tramitaron 412 expedientes sancionadores, de los que 318 terminaron en resolucion firme y 94 caducaron."}, "expected": "skip"}
+{"id": "eg-47", "point": "extract_gate", "input": {"looking_for": "sanciones administrativas y a quien se imponen", "kinds": ["empresa", "persona", "sancion"], "chunk": "Boletin Oficial num. 41 de 2025 - Seccion III - Otras disposiciones - Direccion General de Transporte - Resolucion 118-25"}, "expected": "extract"}
+{"id": "eg-48", "point": "extract_gate", "input": {"looking_for": "personas y empresas, y la relacion entre ellas", "kinds": ["persona", "empresa", "relacion"], "chunk": "Si no visualiza correctamente este mensaje, pulse aqui. Para darse de baja de este boletin, escriba a bajas@ejemplo.org. Este correo se ha enviado a una lista de distribucion."}, "expected": "skip"}
+{"id": "eg-49", "point": "extract_gate", "input": {"looking_for": "personas y empresas, y la relacion entre ellas", "kinds": ["persona", "empresa", "relacion"], "chunk": "Nuestra trayectoria. Desde hace mas de tres decadas acompanamos a nuestros clientes en sus proyectos, con un equipo multidisciplinar y una vocacion de servicio que nos distingue en el sector."}, "expected": "skip"}
+{"id": "eg-50", "point": "extract_gate", "input": {"looking_for": "personas y empresas, y la relacion entre ellas", "kinds": ["persona", "empresa", "relacion"], "chunk": "Documento generado automaticamente. Pagina 12 de 40. Codigo seguro de verificacion ABC123. Expedido a instancia de Caribe Holding S.A."}, "expected": "extract"}

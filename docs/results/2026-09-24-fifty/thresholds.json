@@ -1,0 +1,104 @@
+{
+ "memory_write": {
+  "0.80": {
+   "reachable": false,
+   "n": 34
+  },
+  "0.90": {
+   "reachable": false,
+   "n": 34
+  },
+  "0.95": {
+   "reachable": false,
+   "n": 34
+  }
+ },
+ "redundant_page": {
+  "0.80": {
+   "reachable": false,
+   "n": 34
+  },
+  "0.90": {
+   "reachable": false,
+   "n": 34
+  },
+  "0.95": {
+   "reachable": false,
+   "n": 34
+  }
+ },
+ "goal_met": {
+  "0.80": {
+   "reachable": true,
+   "threshold": 0.34,
+   "precision_held_out": 1.0,
+   "recall_held_out": 1.0,
+   "agreement": 14,
+   "agreement_shipped": 14,
+   "n_eval": 14,
+   "n_derive": 36
+  },
+  "0.90": {
+   "reachable": false,
+   "n": 36
+  },
+  "0.95": {
+   "reachable": false,
+   "n": 36
+  }
+ },
+ "repeats_check": {
+  "0.80": {
+   "reachable": true,
+   "threshold": 0.51,
+   "precision_held_out": 1.0,
+   "recall_held_out": 1.0,
+   "agreement": 12,
+   "agreement_shipped": 12,
+   "n_eval": 12,
+   "n_derive": 38
+  },
+  "0.90": {
+   "reachable": false,
+   "n": 38
+  },
+  "0.95": {
+   "reachable": false,
+   "n": 38
+  }
+ },
+ "extract_gate": {
+  "0.80": {
+   "reachable": false,
+   "n": 34
+  },
+  "0.90": {
+   "reachable": false,
+   "n": 34
+  },
+  "0.95": {
+   "reachable": false,
+   "n": 34
+  }
+ },
+ "recall": {
+  "0.80": {
+   "reachable": true,
+   "threshold": 0.13,
+   "precision_held_out": 1.0,
+   "recall_held_out": 1.0,
+   "agreement": 14,
+   "agreement_shipped": 14,
+   "n_eval": 14,
+   "n_derive": 36
+  },
+  "0.90": {
+   "reachable": false,
+   "n": 36
+  },
+  "0.95": {
+   "reachable": false,
+   "n": 36
+  }
+ }
+}
