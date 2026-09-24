@@ -19,6 +19,7 @@ Three guarantees that are not negotiable:
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -114,7 +115,45 @@ class Squire:
         return decision
 
     def record(self, decision: Decision, **outcome: Any) -> None:
-        self._journal.record("decision", decision_event(decision, outcome))
+        event = decision_event(decision, outcome)
+        if self._sampled_for_audit(decision):
+            event["audit"] = True
+        self._journal.record("decision", event)
+
+    def _sampled_for_audit(self, decision: Decision) -> bool:
+        """Is this decision in the pre-registered sample to be re-labelled later?
+
+        `Thresholds.audit` is the fraction, and the choice is a hash of the decision's own
+        answers, so it is **deterministic and reproducible**: the same decision is always in
+        the sample or always out, and the sample is fixed before anyone has seen whether the
+        decision was right. That is the whole point. The failure this prevents is the one
+        that inflates every published result in this area: tuning a threshold on cases
+        chosen after the fact.
+
+        The hash covers the decision's position in the session as well as its answers. An
+        earlier draft hashed the answers alone, and a smoke test over 200 identical decisions
+        sampled 200 of them at a fraction of 0.2: with the position left out, two decisions
+        that answered the same way are the same draw, so the sample picks *classes* of
+        decision rather than decisions. Confident binary points return the same numbers again
+        and again, which is exactly where that bias bites hardest. Reproducibility survives:
+        replaying the same sequence reproduces the same sample.
+
+        It samples decisions the model actually answered, at any confidence. Abstentions are
+        already visible in the journal as abstentions and need no flag to be found.
+
+        The shipped pattern this copies reviews everything below the threshold *and* a
+        random fraction above it, as a standing audit of the threshold itself rather than of
+        the model (AWS Augmented AI condition syntax). Ours is the second half; the first
+        half is a journal query, because a sub-threshold decision is already recorded.
+        """
+        if self._t.audit <= 0.0 or decision.failed or not decision.answers:
+            return False
+        material = f"{decision.point}|{self._meter.decisions}|" + "|".join(
+            f"{key}:{answer.choice}:{answer.score}:{answer.truth}:{answer.confidence}"
+            for key, answer in sorted(decision.answers.items())
+        )
+        digest = hashlib.blake2b(material.encode("utf-8"), digest_size=8).digest()
+        return int.from_bytes(digest, "big") % 10_000 < self._t.audit * 10_000
 
     # --- decision points -------------------------------------------------------------
 

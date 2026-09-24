@@ -46,6 +46,10 @@ class Thresholds:
     tools: float = 0.35  # below this, a tool group leaves the model's call (in doubt, keep)
     saturated: float = 0.70  # probability that a research line is exhausted
     remember: float = 0.70  # probability needed to write a fact to long-term memory
+    # Fraction of decisions pre-registered for re-labelling. See `Squire.record`: the
+    # point is that the sample is chosen before anyone has seen the outcome, so a
+    # threshold can never be tuned on a set someone picked afterwards.
+    audit: float = 0.0
     max_decisions: int = 400  # per job
     max_usd: float = 0.10  # per job
 

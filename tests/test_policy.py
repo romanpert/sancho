@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from sanchopanza import Decision, Thresholds
 from sanchopanza.points import citation, routing, search, triage
+from sanchopanza.providers import FixedDecider
 
-from .helpers import choice, decision, score, thresholds, yes
+from .helpers import choice, decision, score, squire, thresholds, yes
 
 
 def test_downgrading_needs_more_confidence_than_upgrading():
@@ -85,3 +88,74 @@ def test_thresholds_from_a_flat_mapping_ignores_unknown_keys():
     )
     assert t.act == 0.8 and t.allow_upgrade is True and t.max_decisions == 50
     assert t.relax == Thresholds().relax
+
+
+# --- the pre-registered audit sample -------------------------------------------------------
+#
+# A threshold can only move on evidence, and evidence means re-labelled decisions. The way
+# that goes wrong everywhere is that the cases get chosen after someone has seen which ones
+# were right. So the sample is fixed by a hash of the decision's own answers: deterministic,
+# reproducible, and decided before the outcome is known.
+
+
+def _answered(point: str = "triage", p: float = 0.9):
+    return decision(point, relevant=yes(p), evidence=yes(0.5))
+
+
+def _flags(journal):
+    return [e["data"].get("audit", False) for e in journal.events]
+
+
+def test_no_sampling_by_default():
+    sq, journal = squire(FixedDecider({}))
+    sq.record(_answered())
+    assert _flags(journal) == [False]
+
+
+def test_the_sample_is_reproducible_on_a_replay():
+    """Deterministic, not random: the same sequence yields the same sample, every time.
+
+    The hash covers the decision's position as well as its answers. Hashing the answers
+    alone looked simpler and was wrong: 200 identical decisions all landed on the same side
+    of a 0.2 cut, because two decisions that answered the same way were the same draw. A
+    confident binary point returns the same numbers all day, so that bias is not a corner
+    case.
+    """
+
+    def one_session():
+        sq, journal = squire(
+            FixedDecider({"relevant": yes(0.9), "evidence": yes(0.8), "injection": yes(0.01)}),
+            audit=0.3,
+        )
+        for i in range(40):
+            asyncio.run(sq.triage_page(purpose=f"p{i}", text=f"texto {i}"))
+        return _flags(journal)
+
+    first, second = one_session(), one_session()
+    assert first == second
+    assert 0 < sum(first) < len(first)  # and it is a sample, not everything or nothing
+
+
+def test_everything_is_sampled_at_one_and_nothing_at_zero():
+    high, journal_high = squire(FixedDecider({}), audit=1.0)
+    low, journal_low = squire(FixedDecider({}), audit=0.0)
+    for i in range(6):
+        high.record(_answered(p=0.5 + i / 20))
+        low.record(_answered(p=0.5 + i / 20))
+    assert all(_flags(journal_high))
+    assert not any(_flags(journal_low))
+
+
+def test_a_failed_or_empty_decision_is_never_sampled():
+    sq, journal = squire(FixedDecider({}), audit=1.0)
+    sq.record(Decision("triage", {}, "jev", "-", error="down"))
+    sq.record(Decision("triage", {}, "jev", "-"))
+    assert not any(_flags(journal))
+
+
+def test_the_sample_is_roughly_the_fraction_asked_for():
+    sq, journal = squire(FixedDecider({}), audit=0.2)
+    for i in range(400):
+        sq.record(decision("triage", relevant=yes(i / 400), evidence=yes(0.5)))
+    taken = sum(_flags(journal))
+    assert 40 <= taken <= 120  # 20 % of 400, loose: it is a hash, not a shuffle
