@@ -72,6 +72,8 @@ class Squire:
         self._meter = Meter()
         self._queries: tuple[str, ...] = ()
         self._cap_warned = False
+        self._last_selection: frozenset[str] | None = None
+        self._churn_warned = False
 
     # --- plumbing --------------------------------------------------------------------
 
@@ -224,11 +226,49 @@ class Squire:
         selection = tools.select(
             probs, self._t, always=always, failed=all(d.failed for d in decisions)
         )
+        self._warn_if_the_catalog_churns(selection)
         for d in decisions:
             self.record(
                 d, kept=len(selection.keep), dropped=len(selection.dropped), reason=selection.reason
             )
         return selection
+
+    def _warn_if_the_catalog_churns(self, selection: tools.Selection) -> None:
+        """Say so, once, when a session narrows its tool catalog to a *different* set.
+
+        This is the only place the package can notice the most expensive mistake it is able
+        to cause. Tool definitions sit at the front of the prompt prefix, so changing them
+        invalidates the tools, system and message caches together. Measured over 8 turns on
+        claude-sonnet-5 (`benchmarks/cache/`): narrowing once is 43 % cheaper than not
+        narrowing, alternating between two stable subsets is 14 % *dearer* than not
+        narrowing, and a different subset each turn reads **zero** tokens from cache and
+        costs 4.15x the run that decided once.
+
+        A warning and not an error: some harnesses change the tool set through channels that
+        do preserve the cache (a server-side tool search, or `tool_addition` / `tool_removal`
+        blocks with `defer_loading`), and the squire cannot tell from here which one is in
+        use. It can only tell that the selection moved, which is the thing worth knowing.
+        """
+        current = frozenset(selection.keep)
+        if (
+            self._last_selection is not None
+            and current != self._last_selection
+            and not self._churn_warned
+        ):
+            self._churn_warned = True
+            self._journal.record(
+                "warning",
+                {
+                    "message": "the tool selection changed within one session. If this is "
+                    "written back into the `tools` array it invalidates the whole prompt "
+                    "cache and costs more than the schemas it saves: select once per "
+                    "session, or use a channel that appends instead of swapping. See "
+                    "benchmarks/cache/results/summary.md.",
+                    "previous": sorted(self._last_selection),
+                    "now": sorted(current),
+                },
+            )
+        self._last_selection = current
 
     async def verify_citation(
         self, *, claim: str, quote: str, source: str

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from sanchopanza import Decision
 from sanchopanza.points import tools
+from sanchopanza.providers import FixedDecider
 
-from .helpers import decision, thresholds, yes
+from .helpers import decision, squire, thresholds, yes
 
 CATALOG = [
     {
@@ -77,3 +80,43 @@ def test_the_threshold_is_the_one_from_the_policy():
     )
     assert tools.decide(d, thresholds(tools=0.6), catalog=CATALOG).keep == ("aemps",)  # best kept
     assert tools.decide(d, thresholds(tools=0.5), catalog=CATALOG).keep == NAMES
+
+
+# --- the cache-safety warning -------------------------------------------------------------
+#
+# The package can cause exactly one very expensive mistake: narrowing the tool catalog on
+# every turn and writing it back into `tools`, which invalidates the tools, system and
+# message caches together. Measured at 4.15x in benchmarks/cache. The squire cannot stop it
+# (some harnesses change tools through cache-preserving channels) but it can say so once.
+
+
+def _catalog():
+    return [
+        {"name": "registros", "about": "registros mercantiles"},
+        {"name": "judicial", "about": "sentencias y expedientes"},
+        {"name": "salud", "about": "medicamentos y ensayos"},
+    ]
+
+
+def _selecting(*needed: bool):
+    """A decider that answers the per-group Truth questions with a fixed pattern."""
+    return FixedDecider({f"needed_{i}": yes(1.0 if flag else 0.0) for i, flag in enumerate(needed)})
+
+
+def test_selecting_the_same_catalog_twice_says_nothing():
+    sq, journal = squire(_selecting(True, True, False))
+    asyncio.run(sq.select_tools(purpose="p", catalog=_catalog()))
+    asyncio.run(sq.select_tools(purpose="p", catalog=_catalog()))
+    assert not [e for e in journal.events if e["kind"] == "warning"]
+
+
+def test_a_changed_selection_warns_once_and_names_both_sets():
+    sq, journal = squire(_selecting(True, True, False))
+    asyncio.run(sq.select_tools(purpose="p", catalog=_catalog()))
+    sq._decider = _selecting(True, False, True)  # noqa: SLF001 - the second turn decides differently
+    asyncio.run(sq.select_tools(purpose="p", catalog=_catalog()))
+    asyncio.run(sq.select_tools(purpose="p", catalog=_catalog()))
+    warnings = [e for e in journal.events if e["kind"] == "warning"]
+    assert len(warnings) == 1
+    assert warnings[0]["data"]["previous"] == ["judicial", "registros"]
+    assert "prompt cache" in warnings[0]["data"]["message"]
