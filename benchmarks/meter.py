@@ -28,6 +28,17 @@ one-hour write 2x. `cache_creation_input_tokens` does not say which TTL was used
 multiplier is a parameter: pass `cache_ttl="1h"` on a meter for a job that sets
 `ENABLE_PROMPT_CACHING_1H`, or the figure understates the write side by 60 %.
 
+**Server tools are billed per request as well as per token, and this file does not know
+about that.** Measured on a real agent job on 2026-09-24: `web_search` charged exactly
+**0.0100 USD per request** on top of the tokens its results consumed, twice over (0.1300 USD
+across 13 searches, 0.1000 USD across 10). Those tokens are billed against
+`claude-haiku-4-5`, a model the job never configured, and on that job search came to **31 to
+36 % of the whole bill** while the decision layer came to 0.08 %. So on a harness that
+searches, `Meter.cost()` understates the truth by whatever the per-request fees add up to,
+and the model breakdown looks like somebody else's spending. Read the SDK's own
+`model_usage` / `ResultMessage.total_cost_usd` beside this, and the organization's cost
+report above both (`benchmarks/billed.py`).
+
 `cache_read_input_tokens` sitting at zero across repeated calls with a shared prefix is the
 expensive silent failure, so `summary()` reports it whether or not anyone asked.
 """

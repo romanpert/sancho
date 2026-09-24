@@ -125,6 +125,20 @@ Narrowing the catalog **once** is worth 43 %. Narrowing it on alternate turns co
 across eight turns and costs 4.15x the arm that took the same decision once. Same decision,
 same tools, different moment, opposite sign.
 
+**And the corresponding good news, measured on 2026-09-24 on a real job rather than a
+benchmark.** The same investigation was run twice in the deploying harness, identical in
+brief, profile and model, differing only in whether the layer was attached. With the layer
+on, **90.8 %** of input tokens came from cache; with it off, **89.5 %** **[M]**. Deciding
+through hooks that rewrite a tool's *input* or deny the call never touches `tools`, `system`
+or the history, so the prefix survives - which is what the invariant says and is now
+measured. The layer cost 0.0007 USD on a 0.86 USD job, **0.08 %**.
+
+What that run does **not** show: the decider returned the default route on all 13 of its
+decisions, so this is "harmless to the cache", not "harmless under load". And the same job
+run twice with the layer off *both* times differed by 18 % in cost, a variance floor wider
+than any effect one pair could resolve, so the cost comparison from it is null and only the
+cache result is claimed.
+
 ---
 
 ## 2. The rule that generalises all of it: *when* beats *how good*

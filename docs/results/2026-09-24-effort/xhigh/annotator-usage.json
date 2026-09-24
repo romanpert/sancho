@@ -1,0 +1,64 @@
+{
+ "model": "claude-opus-5",
+ "cache_ttl": "5m",
+ "cost_usd": 1.18626,
+ "uncached_cost_usd": 1.18626,
+ "usage": {
+  "calls": 212,
+  "input": 145492,
+  "output": 18352,
+  "cache_read": 0,
+  "cache_write": 0,
+  "seconds": 896.5546122000669
+ },
+ "by_label": {
+  "extract_gate": {
+   "calls": 34,
+   "input": 22855,
+   "output": 3025,
+   "cache_read": 0,
+   "cache_write": 0,
+   "seconds": 143.9351397000719
+  },
+  "goal_met": {
+   "calls": 36,
+   "input": 20401,
+   "output": 3596,
+   "cache_read": 0,
+   "cache_write": 0,
+   "seconds": 157.72034400008852
+  },
+  "memory_write": {
+   "calls": 34,
+   "input": 36286,
+   "output": 2375,
+   "cache_read": 0,
+   "cache_write": 0,
+   "seconds": 141.71184449997963
+  },
+  "recall": {
+   "calls": 36,
+   "input": 19348,
+   "output": 1226,
+   "cache_read": 0,
+   "cache_write": 0,
+   "seconds": 132.25495359976776
+  },
+  "redundant_page": {
+   "calls": 34,
+   "input": 23111,
+   "output": 6684,
+   "cache_read": 0,
+   "cache_write": 0,
+   "seconds": 177.82939500012435
+  },
+  "repeats_check": {
+   "calls": 38,
+   "input": 23491,
+   "output": 1446,
+   "cache_read": 0,
+   "cache_write": 0,
+   "seconds": 143.10293540003477
+  }
+ }
+}

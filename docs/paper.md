@@ -745,12 +745,38 @@ clearly not for a judgment that is itself the deliverable.
 
 Two conditions push the ratio **towards** the generative arm rather than away from it, and
 both are worth stating. It was run at `low` effort answering in a single word, which is close
-to the cheapest a frontier model can be asked to make these judgments; at any realistic effort
-setting the ratio grows. And neither arm caches: a per-decision prompt of a few hundred tokens
-is below the minimum cacheable prefix of 512 to 4096 tokens, so a `cache_control` breakpoint
-on the system prompt read **zero** on all 212 calls. That last fact is a small result in its
-own right and the mirror of Section 5.11: the prompt cache, which dominates the economics of
-a long agent conversation, does nothing whatever at the granularity of one decision.
+to the cheapest a frontier model can be asked to make these judgments. And neither arm
+caches: a per-decision prompt of a few hundred tokens is below the minimum cacheable prefix of
+512 to 4096 tokens, so a `cache_control` breakpoint on the system prompt read **zero** on all
+212 calls. That last fact is a small result in its own right and the mirror of Section 5.11:
+the prompt cache, which dominates the economics of a long agent conversation, does nothing
+whatever at the granularity of one decision.
+
+**What paying the frontier model to think actually buys, measured.** The same 210 cases were
+answered again at every effort level, changing nothing else:
+
+| Effort | Correct | Output tokens | Cost per judgment | Median latency |
+|---|---|---|---|---|
+| low | 203/210 = 97 % | 2,439 | 3,719 millionths | 2,731 ms |
+| medium | 205/210 = 98 % | 5,679 | 4,101 millionths | 2,808 ms |
+| high | 206/210 = 98 % | 12,754 | 4,946 millionths | 3,566 ms |
+| xhigh | 206/210 = 98 % | 18,352 | 5,596 millionths | 3,786 ms |
+
+Thinking buys **three decisions out of 210** and saturates at `high`: `xhigh` writes 44 % more
+output tokens than `high` for no further gain, at 13 % more cost and 6 % more latency. So the
+conservative framing above understates the ratio rather than the gap, and the honest
+best-against-best comparison is **206/210 = 98 % at 4,946 millionths and 3.6 s against
+202/211 = 96 % at 28 millionths and 250 ms: 174x the price and 14x the latency for two points
+of accuracy.**
+
+**The four cases whose label moves with effort are the four already on the disputed list.**
+`eg-25`, `eg-35`, `gm-50` and `rd-42` are exactly the cases the two annotators labelled
+differently in Section 5.10, and `gm-50` is also the one that moved between two samples of the
+same prompt. Three independent signals - annotator disagreement, sampling instability, and
+sensitivity to a thinking budget - select the same four cases without being aimed at them.
+That is the strongest evidence in this paper that a disputed list picks out genuine ambiguity
+rather than noise, and it suggests a cheap operational test: **a case whose label depends on
+an effort setting is a case whose label depends on a setting, not on the criteria.**
 
 *A measurement error, recorded because the fix is the interesting part.* The first run of this
 annotator produced 212 labels and **no measured cost at all**. The estimate was stated in
@@ -987,15 +1013,44 @@ to the questions and the policy, not to the harness they were first built in.
 11. **The memory pipeline end to end**: a write path with and without the write gate and the
     collision point, measured on calls, tokens and retrieval quality. Nobody has published
     this; a 2026 survey found only 2 of 9 memory systems reporting any efficiency metric.
-12. **A generative verifier as a control on the compositional points.** Run D5's pairwise
-    dependency judgments against a model that writes a short justification before the score,
-    on the same pairs, and report the difference. If the generative verifier wins, the
-    package should route by question shape rather than by price, and say so.
-13. **Instrument `cache_read_input_tokens` with the layer on and off, on the same job.** The
-    cache experiment of Section 5.11 measures the tool-catalog case in isolation; the same
-    measurement on a real job is what would confirm that no other decision point mutates a
-    prefix. The repository's own operating rule already says a zero there is the expensive
-    silent failure.
+12. **Run on 2026-09-24, and the bench had no headroom to answer it.** The design was a two
+    by two: a compositional point (`dependency`, 20 pairs) and a non-compositional control
+    (`recall`, 36 turns), each answered by the same frontier model twice, once in a single
+    word and once after working the answer out in two sentences.
+
+    | Point | Shape | Evaluator | Generative, direct | Generative, reasoning |
+    |---|---|---|---|---|
+    | dependency | compositional | 19/20 | 20/20 | 20/20 |
+    | recall | control | 36/36 | 36/36 | 36/36 |
+
+    Writing the justification first changed **zero** decisions on either point, at 1.9x and
+    1.7x the cost per judgment. **That is not evidence against the GenRM claim**, and saying
+    so is the point: the direct arm was already perfect on both, so no gain was detectable.
+    The experiment bounds what reasoning costs and says nothing about what it buys. What it
+    does show is the one place the evaluator loses, and it is the predicted one: `dependency`
+    is the only point here where a typed head trails a generative model, by one pair in
+    twenty.
+
+    The version worth running needs compositional cases the cheap arm gets **wrong** - longer
+    dependency chains, three lines rather than two, a shared artefact that is renamed between
+    them. `benchmarks/genrm.py` now refuses to report a null against a perfect baseline
+    without saying that is what it is.
+13. **Done on 2026-09-24, and the invariant holds.** A real investigation job was run twice
+    in the deploying harness, identical in brief, profile and model, differing only in
+    whether the layer was attached, with per-turn `usage` recorded on both arms. With the
+    layer on, **90.8 %** of input tokens were served from cache; with it off, **89.5 %**
+    (1,839,255 cached reads against 1,634,229, on comparable cache writes). Deciding through
+    `PreToolUse` hooks that rewrite a tool's *input* or deny the call does not touch `tools`,
+    `system` or the message history, so it cannot invalidate the prefix - Section 3.4's
+    fourth invariant, now measured end to end rather than argued. The layer's own cost on
+    that job was 0.0007 USD against 0.86 USD, **0.08 %**.
+
+    Two caveats keep this from being more than it is. The decider made 13 decisions and every
+    one of them returned the default route, so this shows the layer is *harmless* to the
+    cache rather than harmless *under load*; and the same job run twice with the layer off
+    **both times** differed by 18 % in cost and 17 % in turns, which is a variance floor
+    larger than any effect a single pair could resolve. The cost comparison from that run is
+    therefore reported as null, and only the cache result is claimed.
 14. **A canary on the provider.** Forty frozen cases run nightly against the pinned version,
     alarming on a shift in the *distribution* of probabilities rather than on labels. A
     non-generative model gives no "the output looks odd" signal, so drift has to be watched

@@ -1,0 +1,36 @@
+{"id": "rc-15", "point": "recall", "label": "look", "raw": "refiere explícitamente a un acuerdo previo sobre el formato/estilo, que no está en el turno.\n\nlook"}
+{"id": "rc-16", "point": "recall", "label": "look", "raw": "refers to \"la cifra\", \"el informe\" and \"el formato de siempre\" — all previously established items/preferences not present in the turn.\n\nlook"}
+{"id": "rc-17", "point": "recall", "label": "look", "raw": "refiere a un descarte previo (\"como hicimos con el anterior\") y a un referente \"ese\" no presente en el turno. depende de una decisión ya tomada.\n\nlook"}
+{"id": "rc-18", "point": "recall", "label": "look", "raw": "requires knowing which lines of investigation were already established and which was current to determine \"the next\" one. clearly refers to earlier work.\n\nlook"}
+{"id": "rc-19", "point": "recall", "label": "look", "raw": "it explicitly references a mistake made \"la vez pasada,\" a prior interaction detail not present in the turn. the agent must retrieve what that accent error was.\n\nlook"}
+{"id": "rc-20", "point": "recall", "label": "look", "raw": "refers to a prior exclusion decision (\"lo dejamos fuera\") not present in the turn itself.\n\nlook"}
+{"id": "rc-21", "point": "recall", "label": "look", "raw": "writing \"the conclusions section\" presupposes a document, topic and style established earlier; nothing in the turn supplies it.\n\nlook"}
+{"id": "rc-22", "point": "recall", "label": "look", "raw": "the turn points to a specific official source without naming it (\"ya sabes cuál\"), relying on an earlier agreed preference/exclusion of press sources.\n\nlook"}
+{"id": "rc-23", "point": "recall", "label": "look", "raw": "refiere a un informe y a \"eso\" ya discutido previamente, continuando trabajo anterior. no es autocontenido.\n\nlook"}
+{"id": "rc-24", "point": "recall", "label": "look", "raw": "refers to \"esa empresa\" and \"la lista que revisamos\", both prior context.\n\nlook"}
+{"id": "rc-25", "point": "recall", "label": "look", "raw": "\"hazlo igual\" refers back to a previously performed task and its format, which isn't in the turn itself.\n\nlook"}
+{"id": "rc-26", "point": "recall", "label": "look", "raw": "el turno alude a una exclusión ya pedida por el cliente, no presente en el mensaje. depende de información previa almacenada.\n\nlook"}
+{"id": "rc-27", "point": "recall", "label": "look", "raw": "\"retoma\" explicitly resumes a previously started search whose parameters (entity, criteria) are not in the turn.\n\nlook"}
+{"id": "rc-28", "point": "recall", "label": "look", "raw": "the turn points to a datum \"we already had,\" referencing prior retrieval the agent must recall to know what not to search again.\n\nlook"}
+{"id": "rc-29", "point": "recall", "label": "look", "raw": "refers to \"la misma exclusión,\" a prior decision not contained in the turn.\n\nlook"}
+{"id": "rc-30", "point": "recall", "label": "look", "raw": "the turn asks about a rejection decision the agent made earlier, so it depends on prior context (which source was second, why discarded).\n\nlook"}
+{"id": "rc-31", "point": "recall", "label": "look", "raw": "refers to unspecified pending work established earlier; not self-contained.\n\nlook"}
+{"id": "rc-32", "point": "recall", "label": "look", "raw": "refers explicitly to a previously agreed convention for handling figures, which isn't in the turn. needs stored context.\n\nlook"}
+{"id": "rc-33", "point": "recall", "label": "skip", "raw": "la tarea aporta el párrafo completo y solo pide contar palabras; no remite a nada previo.\n\nskip"}
+{"id": "rc-34", "point": "recall", "label": "skip", "raw": "the turn supplies the three names itself and asks only for a generic uppercase transformation. no prior context needed.\n\nskip"}
+{"id": "rc-35", "point": "recall", "label": "skip", "raw": "a standalone factual question about an acronym; nothing refers to prior context.\n\nskip"}
+{"id": "rc-36", "point": "recall", "label": "skip", "raw": "the turn fully specifies the task: a regex for an 11-digit dominican cédula with hyphens, no prior context needed. nothing refers back to earlier decisions or preferences.\n\nskip"}
+{"id": "rc-37", "point": "recall", "label": "skip", "raw": "es una operación genérica sobre texto ya incluido en el turno; no remite a nada previo.\n\nskip"}
+{"id": "rc-38", "point": "recall", "label": "skip", "raw": "es una pregunta general y autónoma sobre conceptos jurídicos, sin referencia a nada previo. no necesita ningún dato anterior.\n\nskip"}
+{"id": "rc-39", "point": "recall", "label": "skip", "raw": "comparar dos fechas dadas explícitamente no requiere nada previo; todo está en el turno.\n\nskip"}
+{"id": "rc-40", "point": "recall", "label": "skip", "raw": "la tarea es ordenar tres cifras dadas explícitamente en el propio turno; no hay referencia a nada previo.\n\nskip"}
+{"id": "rc-41", "point": "recall", "label": "skip", "raw": "turn supplies the full text to translate; no reference to prior decisions or entities beyond the text itself.\n\nskip"}
+{"id": "rc-42", "point": "recall", "label": "skip", "raw": "pide tres sinónimos de una palabra dada; todo lo necesario está en el propio turno.\n\nskip"}
+{"id": "rc-43", "point": "recall", "label": "skip", "raw": "el turno incluye el párrafo completo y pide solo un resumen genérico; no alude a nada previo.\n\nskip"}
+{"id": "rc-44", "point": "recall", "label": "skip", "raw": "pregunta gramatical general, completamente autónoma; no alude a nada previo.\n\nskip"}
+{"id": "rc-45", "point": "recall", "label": "skip", "raw": "the turn names the entity, the specific questions, and the starting source, with no reference to prior work or preferences. everything needed is in the turn itself.\n\nskip"}
+{"id": "rc-46", "point": "recall", "label": "skip", "raw": "the turn names the exact ruling (tc/1148/25) and the source portal, so everything needed is in the request itself. no prior decision, preference or thread is referenced.\n\nskip"}
+{"id": "rc-47", "point": "recall", "label": "skip", "raw": "the turn supplies the full table inline and asks for a generic format conversion. nothing refers to prior context or preferences.\n\nskip"}
+{"id": "rc-48", "point": "recall", "label": "skip", "raw": "the turn supplies the sentence itself and asks a generic grammatical judgment. no prior context needed.\n\nskip"}
+{"id": "rc-49", "point": "recall", "label": "look", "raw": "explicitly invokes prior knowledge of \"el caso\" and a previous attempt, so it depends on earlier stored context.\n\nlook"}
+{"id": "rc-50", "point": "recall", "label": "look", "raw": "refers to a line previously identified in conversation (\"que dijimos\"), so prior context is required.\n\nlook"}

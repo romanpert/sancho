@@ -164,6 +164,16 @@ def main() -> int:
             f"decision{'s' if abs(delta) != 1 else ''} out of {d['n']}, at "
             f"{cost_ratio:.1f}x the cost per judgment."
         )
+        # A null result against a perfect baseline is not a null result, it is a bench with
+        # no headroom. Saying so is the difference between "reasoning does not help here"
+        # and "this experiment could not have detected help".
+        if d["hits"] == d["n"]:
+            lines.append(
+                f"  **Ceiling: the direct arm already scored {d['hits']}/{d['n']}, so no "
+                "gain was detectable on this point.** The comparison bounds what reasoning "
+                "costs, not what it buys; testing the hypothesis needs cases the cheaper "
+                "arm gets wrong."
+            )
         da = arm(results, benches, point, "direct")
         ra = arm(results, benches, point, "reasoning")
         if da and ra:

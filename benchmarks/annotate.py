@@ -183,6 +183,7 @@ async def annotate(
     model: str,
     *,
     reasoning: bool = False,
+    effort: str | None = None,
     attempts: int = 6,
 ) -> dict:
     point = case["point"]
@@ -212,7 +213,7 @@ async def annotate(
                         # a breakpoint here caches nothing and only reads as if it did. The
                         # meter reports `cache_read` either way, and it is zero on this run.
                         system=SYSTEM_REASONING if reasoning else SYSTEM_DIRECT,
-                        output_config={"effort": "medium" if reasoning else "low"},
+                        output_config={"effort": effort or ("medium" if reasoning else "low")},
                         messages=[{"role": "user", "content": prompt}],
                     )
             except (
@@ -298,7 +299,18 @@ async def run(args: argparse.Namespace) -> int:
     sem = asyncio.Semaphore(args.concurrency)
     started = time.perf_counter()
     rows = await asyncio.gather(
-        *(annotate(client, meter, sem, c, args.model, reasoning=args.reasoning) for c in cases)
+        *(
+            annotate(
+                client,
+                meter,
+                sem,
+                c,
+                args.model,
+                reasoning=args.reasoning,
+                effort=args.effort,
+            )
+            for c in cases
+        )
     )
     wall = time.perf_counter() - started
 
@@ -336,6 +348,12 @@ def main() -> int:
         nargs="*",
         default=None,
         help="only these points; default is every point this file knows",
+    )
+    p.add_argument(
+        "--effort",
+        default=None,
+        choices=("low", "medium", "high", "xhigh", "max"),
+        help="output_config.effort; default low, or medium with --reasoning",
     )
     p.add_argument(
         "--reasoning",
