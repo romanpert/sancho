@@ -127,10 +127,18 @@ image classifiers are not substitutes for a calibrated decider and it is worth k
 | Google Vision SafeSearch | a six-value likelihood bucket, "intended to give clients highly stable results across model upgrades" | none, and not expressible |
 | OpenAI `omni-moderation-latest` | scores in [0, 1], documented as confidence, with a warning that they "may need recalibration over time" | none |
 
-Two of the four cannot emit a continuous score at all, and none of the four publishes an ECE
-or a reliability diagram. Self-hosted models do better: ShieldGemma 2 publishes per-policy
-precision, recall and F1 and returns the probability of the `Yes` token. So calibration over
-images is something you fit and measure, not something you buy, exactly as it was for text.
+Two of the four cannot emit a continuous score at all. Widening the survey to the
+specialists does not help: across **seven vendors** - those four plus Hive, Clarifai and
+Sightengine - **not one publishes an expected calibration error, a reliability diagram or a
+Brier score**. The nearest thing to an operating point anyone gives is Hive's recommended
+threshold of 0.9, which is a suggestion and not a calibration claim, and Sightengine's
+"99.2 % F1" comes with no test set, no date and no threshold, which makes it unusable for
+setting one. The pattern worth remembering: **no vendor publishes both a performance number
+and the threshold it was measured at**, which is exactly the pair you would need.
+
+Self-hosted models do better. ShieldGemma 2 publishes per-policy precision, recall and F1 and
+returns the probability of the `Yes` token. So calibration over images is something you fit
+and measure, not something you buy, exactly as it was for text.
 
 **Three rules the survey argues for, and the package enforces the first.**
 
