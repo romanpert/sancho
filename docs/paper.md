@@ -715,6 +715,61 @@ at most one ExcluIR query in eight, and negation is where instruction-following 
 passed, which is a hint and not a result. Section 8 gives the three-arm experiment that would
 settle it.
 
+### 5.13 Substitution, measured directly against a frontier model
+
+Every cost claim in Sections 5.1 to 5.12 is a price ratio: a measured cost on one side and a
+published tariff on the other. This section replaces the tariff with a measurement. It exists
+because of an accident of construction: the second annotator built for Section 5.10's bench
+is a frontier generative model asked, one case per request, **the same questions produced by
+the same question builders** the evaluator is asked, over the same cases, blind to the labels
+and to the evaluator's answers. Two independent answers to one set of judgments, with a cost
+meter on both.
+
+211 judgments. Neither arm was constructed to win: the generative arm exists to check the
+annotator, not to lose to it.
+
+| | Evaluator, shipped policy | Evaluator, plain 0.5 cut | `claude-opus-5` |
+|---|---|---|---|
+| Agreement with the bench labels | 190/211 = 90 % | 202/211 = 96 % | 204/211 = 97 % |
+| Cost per judgment | 28.4 millionths | same | 3,719 millionths |
+| Total | 0.0060 USD | same | 0.7884 USD |
+| Median latency | 250 ms | same | 2,731 ms |
+
+**It is not a tie, and the paper's claim is the weaker one.** The frontier model is the
+better judge. Of the fourteen decisions separating it from the shipped policy, **two are the
+model and twelve are our own thresholds** - the same gap Section 5.10 reports, seen from
+outside. So the defensible sentence is: *a small amount of accuracy, bought back at 131x the
+price and 10.9x the latency.* Whether that trade is worth taking is a property of the
+decision and not of the models: clearly worth it for a gate in front of a generative pass,
+clearly not for a judgment that is itself the deliverable.
+
+Two conditions push the ratio **towards** the generative arm rather than away from it, and
+both are worth stating. It was run at `low` effort answering in a single word, which is close
+to the cheapest a frontier model can be asked to make these judgments; at any realistic effort
+setting the ratio grows. And neither arm caches: a per-decision prompt of a few hundred tokens
+is below the minimum cacheable prefix of 512 to 4096 tokens, so a `cache_control` breakpoint
+on the system prompt read **zero** on all 212 calls. That last fact is a small result in its
+own right and the mirror of Section 5.11: the prompt cache, which dominates the economics of
+a long agent conversation, does nothing whatever at the granularity of one decision.
+
+*A measurement error, recorded because the fix is the interesting part.* The first run of this
+annotator produced 212 labels and **no measured cost at all**. The estimate was stated in
+advance, was wrong by assuming the system prompt would cache, and was never checked
+afterwards. The root cause was not carelessness: list prices and the cache arithmetic were
+duplicated across two benchmark runners and absent from the annotator, so there was nothing to
+reach for. `benchmarks/meter.py` is now the single place that knows them, both runners use it
+(a property check over 2,000 random usages and four models confirms no published figure
+moves), and it refuses to price an unknown model rather than defaulting. Its summary always
+prints the cache line and says so loudly when `cache_read_input_tokens` is zero, which is how
+the no-op breakpoint above was found. The client-side estimate is still not a bill; the
+organization's Usage and Cost report is, and it requires an Admin API key, which a normal key
+is refused from with a 401.
+
+*Stability.* Re-running the annotator over the same cases with the same prompts left **210 of
+211 labels identical**. The one that moved, `gm-50`, was already on the disputed list from the
+annotator disagreement of Section 5.10 and turns on whether a *multa* and an *indemnizacion*
+are the same thing. Two independent signals selected the same case without being aimed at it.
+
 ---
 
 ## 6. Analysis

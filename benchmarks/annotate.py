@@ -50,7 +50,7 @@ sys.path.insert(0, str(RAIZ / "benchmarks"))
 import anthropic  # noqa: E402
 from meter import Meter, Timed  # noqa: E402
 
-from sanchopanza.points import graph, loop, memory, triage  # noqa: E402
+from sanchopanza.points import graph, loop, memory, plan, triage  # noqa: E402
 
 # Vocabulary and the rule by which the point's questions combine into one label, taken from
 # the package's own `decide_*` functions. The questions themselves are never paraphrased.
@@ -87,6 +87,13 @@ POINTS: dict[str, tuple[list[str], str]] = {
         "says something about it, even in passing, even if the chunk is mostly something "
         "else. Answer skip only for structural or generic text with no instance at all.",
     ),
+    "dependency": (
+        ["true", "false"],
+        "Answer true only if `line_b` consumes something `line_a` produces - a list, a "
+        "dataset, a selection, a verdict - so that starting them together would make B wait "
+        "or repeat work. Sharing a topic is not a dependency. Being merged later is not a "
+        "dependency.",
+    ),
     "redundant_page": (
         ["drop", "keep"],
         "Answer drop only if `text` carries no new figure, date, name, outcome, "
@@ -97,11 +104,22 @@ POINTS: dict[str, tuple[list[str], str]] = {
     ),
 }
 
-SYSTEM = (
+SYSTEM_DIRECT = (
     "You are annotating a benchmark for a decision model. You are the second, independent "
     "annotator: you cannot see the first annotator's label and must not try to guess it. "
     "Read the state and the question's own criteria, apply them literally, and answer with "
     "exactly one word from the allowed set. No punctuation, no explanation, one word."
+)
+
+# The generative-verifier arm. Writing the justification before the verdict is the whole of
+# what a GenRM does that a frozen scalar head cannot, and it is the control that item 12 of
+# the paper's future work asks for on the compositional points.
+SYSTEM_REASONING = (
+    "You are annotating a benchmark for a decision model. You are the second, independent "
+    "annotator: you cannot see the first annotator's label and must not try to guess it. "
+    "Read the state and the question's own criteria and apply them literally. First write at "
+    "most two short sentences working out the answer. Then, on a final line containing "
+    "nothing else, write exactly one word from the allowed set."
 )
 
 
@@ -134,6 +152,14 @@ def rubric(point: str, inp: dict) -> tuple[str, str]:
             chunk=inp["chunk"], looking_for=inp["looking_for"], kinds=inp.get("kinds", ())
         )
         one = qs["has_anything"]
+    elif point == "dependency":
+        state, qs = plan.dependency_questions(
+            a_title=inp["a_title"],
+            a_goal=inp["a_goal"],
+            b_title=inp["b_title"],
+            b_goal=inp["b_goal"],
+        )
+        one = qs["b_needs_a"]
     elif point == "redundant_page":
         state, qs = triage.redundancy_questions(
             purpose=inp["purpose"], text=inp["text"], known=inp["known"]
@@ -149,15 +175,30 @@ def rubric(point: str, inp: dict) -> tuple[str, str]:
     return json.dumps(state, ensure_ascii=False, indent=1), questions
 
 
-async def annotate(client, meter: Meter, sem, case: dict, model: str, attempts: int = 6) -> dict:
+async def annotate(
+    client,
+    meter: Meter,
+    sem,
+    case: dict,
+    model: str,
+    *,
+    reasoning: bool = False,
+    attempts: int = 6,
+) -> dict:
     point = case["point"]
     vocabulary, rule = POINTS[point]
     state, questions = rubric(point, case["input"])
-    prompt = (
-        f"{questions}\n\nDECISION RULE: {rule}\n\n"
-        f"STATE:\n{state}\n\n"
-        f"Answer with exactly one of: {', '.join(vocabulary)}"
+    # The closing line has to carry the format too: with only the system prompt asking for a
+    # justification, the model reads the closing "answer with one word" as the instruction
+    # that counts and answers in one word. Measured: 3 output tokens per call, no reasoning.
+    closing = (
+        "Work the answer out in at most two short sentences, naming what line A produces and "
+        "what line B consumes where that is what the question turns on. Then write a final "
+        f"line containing nothing but one of: {', '.join(vocabulary)}"
+        if reasoning
+        else f"Answer with exactly one of: {', '.join(vocabulary)}"
     )
+    prompt = f"{questions}\n\nDECISION RULE: {rule}\n\nSTATE:\n{state}\n\n{closing}"
     text = ""
     async with sem:
         for attempt in range(attempts):
@@ -170,8 +211,8 @@ async def annotate(client, meter: Meter, sem, case: dict, model: str, attempts: 
                         # minimum cacheable prefix is 512 to 4096 depending on the model, so
                         # a breakpoint here caches nothing and only reads as if it did. The
                         # meter reports `cache_read` either way, and it is zero on this run.
-                        system=SYSTEM,
-                        output_config={"effort": "low"},
+                        system=SYSTEM_REASONING if reasoning else SYSTEM_DIRECT,
+                        output_config={"effort": "medium" if reasoning else "low"},
                         messages=[{"role": "user", "content": prompt}],
                     )
             except (
@@ -185,7 +226,12 @@ async def annotate(client, meter: Meter, sem, case: dict, model: str, attempts: 
             text = "".join(b.text for b in response.content if b.type == "text").strip().lower()
             word = re.sub(r"[^a-z_]", "", text.split()[-1]) if text.split() else ""
             if word in vocabulary:
-                return {"id": case["id"], "point": point, "label": word, "raw": text[:80]}
+                return {
+                    "id": case["id"],
+                    "point": point,
+                    "label": word,
+                    "raw": text[:400] if reasoning else text[:80],
+                }
     return {"id": case["id"], "point": point, "label": None, "raw": text[:80]}
 
 
@@ -227,7 +273,12 @@ def stability(previous: dict[str, str | None], rows: list[dict]) -> str:
 
 async def run(args: argparse.Namespace) -> int:
     benches = pathlib.Path(args.benches_dir)
-    cases = [c for c in load_cases(benches, args.benches) if c["point"] in POINTS]
+    wanted = set(args.points) if args.points else set(POINTS)
+    cases = [
+        c
+        for c in load_cases(benches, args.benches)
+        if c["point"] in POINTS and c["point"] in wanted
+    ]
     if args.limit:
         cases = cases[: args.limit]
     out = pathlib.Path(args.out)
@@ -246,7 +297,9 @@ async def run(args: argparse.Namespace) -> int:
     client = anthropic.AsyncAnthropic()
     sem = asyncio.Semaphore(args.concurrency)
     started = time.perf_counter()
-    rows = await asyncio.gather(*(annotate(client, meter, sem, c, args.model) for c in cases))
+    rows = await asyncio.gather(
+        *(annotate(client, meter, sem, c, args.model, reasoning=args.reasoning) for c in cases)
+    )
     wall = time.perf_counter() - started
 
     unlabelled = [r["id"] for r in rows if r["label"] is None]
@@ -278,6 +331,17 @@ def main() -> int:
     p.add_argument("--name", default="annotator-2.jsonl")
     p.add_argument("--model", default="claude-opus-5")
     p.add_argument("--concurrency", type=int, default=8)
+    p.add_argument(
+        "--points",
+        nargs="*",
+        default=None,
+        help="only these points; default is every point this file knows",
+    )
+    p.add_argument(
+        "--reasoning",
+        action="store_true",
+        help="generative-verifier arm: justify in at most two sentences, then answer",
+    )
     p.add_argument("--limit", type=int, default=0, help="first N cases only, for a smoke test")
     p.add_argument(
         "--overwrite",
