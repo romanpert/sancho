@@ -28,6 +28,7 @@ from ..contract import (
     Truth,
     truth_confidence,
 )
+from ..media import attachments_in
 
 BASE_URL = "https://api.typesafe.ai"
 PATH = "/v1/systemone"
@@ -127,7 +128,22 @@ class JevDecider:
     async def aclose(self) -> None:
         await self._client.aclose()
 
+    accepts_attachments = False
+
     async def decide(self, point: str, state: State, questions: Mapping[str, Question]) -> Decision:
+        found = attachments_in(state)
+        if found:
+            # Refuse loudly. The alternative, sending the state with the attachment stripped
+            # out, returns a confident answer to a question about something the model never
+            # saw, which is worse than no answer: the squire's fail-open turns this into the
+            # harness default and journals the reason. Route the point to a provider that
+            # reads images (RoutedDecider) or put one in front (FallbackDecider).
+            kinds = ", ".join(sorted({a.media_type for a in found}))
+            raise DeciderUnavailable(
+                f"this model accepts text only and the state carries {len(found)} "
+                f"attachment(s) ({kinds}); its own documentation says images, audio and "
+                "video are not supported"
+            )
         body = {
             "model": self._model,
             "state": state,

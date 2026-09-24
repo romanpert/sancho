@@ -27,6 +27,7 @@ from .contract import (
     Truth,
 )
 from .journal import JsonlJournal, MemoryJournal, NullJournal
+from .media import Attachment, attachments_in, image, without_attachments
 from .policy import Thresholds
 from .squire import GuardResult, Squire
 
@@ -34,6 +35,7 @@ __version__ = "0.2.0"
 
 __all__ = [
     "Answer",
+    "Attachment",
     "Choice",
     "Decider",
     "DeciderUnavailable",
@@ -50,8 +52,11 @@ __all__ = [
     "Thresholds",
     "Truth",
     "__version__",
+    "attachments_in",
     "choice",
+    "image",
     "labelled",
     "score",
     "truth",
+    "without_attachments",
 ]

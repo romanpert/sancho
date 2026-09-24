@@ -93,3 +93,58 @@ data; the journal records every decision with its probabilities and outcome; onc
 labels, a small supervised model behind the same contract can replace it where it wins, on
 your hardware, in ten milliseconds. Nothing above `Decider` changes. That is what "plug and
 play" means here.
+
+## Beyond text: attachments
+
+`state` may carry a `sanchopanza.media.Attachment` at any depth, and the questions do not
+change. That is not a guess about the future: *Visual Jev* (arXiv 2609.25845, 2026-09-22,
+independent of TypeSafe) scores Choice, Score and Noul questions over an image from raw
+logits with no autoregressive generation, at 5.7 ms amortized per question when 32 questions
+share one image. The shape of this contract already fits it.
+
+```python
+from sanchopanza import answers, image, attachments_in
+from sanchopanza.providers import LocalDecider, RoutedDecider, create
+
+def shows_an_error_state(state, question):
+    shot = attachments_in(state)
+    return answers.truth(my_classifier(shot[0].path)) if shot else None
+
+vision = LocalDecider({"error_state": shows_an_error_state})
+decider = RoutedDecider({"screenshot": vision}, default=create("jev"))
+```
+
+**What does not exist, as of 2026-09-24.** No vendor sells a calibrated, non-generative
+decision model that reads an image. TypeSafe's own documentation is explicit about the model
+this package was built against: *"Jev accepts text only. State must be a string, JSON object,
+or array of text values. Images, audio, and video are not supported (yet)."* The managed
+image classifiers are not substitutes for a calibrated decider and it is worth knowing why:
+
+| | Score it returns | Calibration published |
+|---|---|---|
+| AWS Rekognition moderation | confidence 0-100, documented as "confidence that the label has been correctly identified" | none |
+| Azure AI Content Safety, image | an ordinal severity in {0, 2, 4, 6} - how bad, not how likely | none |
+| Google Vision SafeSearch | a six-value likelihood bucket, "intended to give clients highly stable results across model upgrades" | none, and not expressible |
+| OpenAI `omni-moderation-latest` | scores in [0, 1], documented as confidence, with a warning that they "may need recalibration over time" | none |
+
+Two of the four cannot emit a continuous score at all, and none of the four publishes an ECE
+or a reliability diagram. Self-hosted models do better: ShieldGemma 2 publishes per-policy
+precision, recall and F1 and returns the probability of the `Yes` token. So calibration over
+images is something you fit and measure, not something you buy, exactly as it was for text.
+
+**Three rules the survey argues for, and the package enforces the first.**
+
+1. **A text-only provider refuses an attachment; it never drops it.** `JevDecider` raises
+   `DeciderUnavailable`, the squire turns that into the harness default and journals the
+   reason. Sending the state with the image removed would answer a question about something
+   the model never saw, and fail-open would then treat that answer as real.
+2. **Ask every question about one image in a single call.** One question about a 1080p
+   screenshot on a small hosted vision model is roughly 60x the cost of a text decision here;
+   eight questions grouped over a 768px image is roughly 4.5x. Resize before sending, and use
+   `hints` to say so.
+3. **An image in the context is attack surface this layer cannot screen.** No production
+   prompt-injection classifier accepts an image: Prompt Guard 2, Azure Prompt Shields and
+   Model Armor are text-in, and the best image-accepting detector in the literature reaches a
+   true-positive rate of 0.38 at a false-positive rate of 0.002. Image-borne injection against
+   a shipping browser agent has been demonstrated. The `injection` question here reads text;
+   it does not see pixels.

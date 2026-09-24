@@ -20,6 +20,9 @@ class FallbackDecider:
             raise ValueError("a fallback chain needs at least one decider")
         self._deciders = list(deciders)
         self.name = "fallback(" + ">".join(d.name for d in deciders) + ")"
+        # One link that reads attachments is enough: the text-only ones refuse, the
+        # chain records their error and the capable one still answers.
+        self.accepts_attachments = any(getattr(d, "accepts_attachments", False) for d in deciders)
 
     async def decide(self, point: str, state: State, questions: Mapping[str, Question]) -> Decision:
         merged: dict = {}

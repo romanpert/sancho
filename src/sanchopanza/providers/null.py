@@ -13,6 +13,8 @@ from ..contract import Decision, Question, State
 
 class NullDecider:
     name = "null"
+    # It answers nothing, so it cannot answer wrongly about an attachment it did not read.
+    accepts_attachments = True
 
     async def decide(self, point: str, state: State, questions: Mapping[str, Question]) -> Decision:
         return Decision(point=point, answers={}, provider=self.name, model="-")

@@ -32,6 +32,8 @@ WILDCARD = "*"
 
 class LocalDecider:
     name = "local"
+    # Handlers receive the state untouched, so whatever they can read, they can read.
+    accepts_attachments = True
 
     def __init__(
         self,

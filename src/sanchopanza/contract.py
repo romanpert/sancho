@@ -16,7 +16,10 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol, runtime_checkable
 
 QuestionKind = Literal["choice", "score", "truth"]
-State = str | Mapping[str, Any] | Sequence[Any]
+# A state is text, a mapping or a sequence, and any leaf of it may be a
+# `sanchopanza.media.Attachment`. Whether a provider can read one is a property of the
+# provider, declared by `Decider.accepts_attachments`; the contract only has to admit it.
+State = str | Mapping[str, Any] | Sequence[Any] | Any
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,6 +129,10 @@ class Decider(Protocol):
     """The only thing a harness knows about a decision provider."""
 
     name: str
+    #: Whether this provider can read a `media.Attachment` in the state. Text-only
+    #: providers leave it False and refuse loudly rather than dropping the attachment:
+    #: answering a question about an image that was never sent is worse than not answering.
+    accepts_attachments: bool = False
 
     async def decide(self, point: str, state: State, questions: Mapping[str, Question]) -> Decision:
         """Answer every question about the state in one call.
