@@ -2,8 +2,29 @@
 
 ## 0.2.0 (2026-09-24)
 
-Eight new decision points, the first measurement of *where* a decision may be applied, and
-one negative result about this package's own thresholds that is reported rather than fixed.
+Eight new decision points, the first measurement of *where* a decision may be applied, a
+defect in this package's own thresholds found by attacking its own thesis, and the smallest
+contract change that admits an image.
+
+### Fixed, and the most important line in this release
+
+- **Two gates on one number were one gate at the stricter value.** For a Truth answer from
+  this model class, `confidence` is exactly `|2p - 1|`: 651 recorded answers across three
+  independent runs, zero deviation. So a policy asking for both `p >= a` and
+  `confidence >= c` was asking for `p >= max(a, (1 + c) / 2)`, and the threshold named in the
+  configuration was not the one in force. `memory_write` was configured at 0.70 and enforcing
+  0.80; source redundancy at 0.80 and enforcing 0.875; the recall and extraction gates had a
+  dead clause. The redundant gates are gone, **no threshold value changed**, and the gap
+  between the shipped policy and a plain 0.5 cut fell from eight decisions to three
+  (78/88 to 85/88, AUC 1.00 throughout). `tests/test_policy.py` pins the identity as a canary.
+- **The default model is pinned, not an alias.** `jev-1.13.0` rather than `jev-latest`, which
+  is what the vendor's own model page asks for when thresholds have been tuned, and this
+  package is nothing but tuned thresholds. The squire also warns once if two model versions
+  answer within one session.
+- **A provenance criterion written into free-text prose did not work, and the answer was
+  already in the decision.** `triage.decide` takes `allowed_kinds` / `denied_kinds` and
+  filters on the source kind in code, with no extra call. Found by the steerability bench.
+
 
 ### Added
 
@@ -30,6 +51,20 @@ one negative result about this package's own thresholds that is reported rather 
 - **`docs/where-it-pays.md`**: which decisions are worth taking at all. Three economies
   (substitution, avoidance, affordability), one anti-economy (the prompt cache), a catalog of
   levers ranked by how sure we are, and four things not to use a decision model for.
+- **Steerability bench** (`benches/steerability.jsonl`, 14 flipped pairs): the same
+  document and topic with only the criterion changed, scored by pair accuracy, because a
+  scorer whose inputs are only (query, document) scores 0 % there by construction. 11 of 14.
+  Written to check a marketing claim that turned out to be false: instruction-following
+  rerankers exist, are cheaper than this model, and four public benchmarks measure them.
+  `docs/results/2026-09-24-steerability/`.
+- **Attachments** (`sanchopanza.media`): `state` may carry an `Attachment` at any depth, and
+  the questions do not change. No vendor sells a calibrated non-generative multimodal
+  decision model today - across seven image-classifier vendors not one publishes an ECE - but
+  the shape is proven by an independent paper, and a local vision model behind `LocalDecider`
+  works now. A text-only provider **refuses** an attachment rather than dropping it.
+- **`Thresholds.audit`**: a pre-registered, reproducible sample of decisions marked in the
+  journal for re-labelling, so a threshold can never be tuned on cases picked afterwards.
+- A warning when the tool selection changes within a session, which is the 4.15x mistake.
 - `Thresholds.remember`.
 
 ### Changed
@@ -54,11 +89,12 @@ one negative result about this package's own thresholds that is reported rather 
 
 ### Known limitations, measured
 
-- **The shipped thresholds are too strict for the new points.** Across the six binary points
-  the evaluator is right 86 of 88 at a plain 0.5 cut and 78 of 88 under the thresholds this
-  package ships, with AUC 1.00 on every one. All eight lost decisions are refusals to act, so
-  the layer is safe as shipped and leaving value unclaimed. They were **not** tuned: the rule
-  is 50 cases and a second annotator per point, and this bench has 12 to 20 and one.
+- **Three decisions still separate the policy from a plain 0.5 cut** (85 of 88 against 86 of
+  88, AUC 1.00 throughout) after the redundant-gate fix above. Those are not tuned away: the
+  rule is 50 cases and a second annotator per point, and this bench has 12 to 20 and one.
+- **The steerability bench has no baseline.** An instruction-following reranker over the same
+  pairs is the comparison that matters and it has not been run, so that bench says what this
+  layer does, not what it does better.
 - **The `duplicate` branch of `reconcile` never fired** on 16 cases. In practice the point is
   a contradiction detector with a safe default.
 - **One confident error on the edge check**: a true triple rejected at confidence 1.00, where
