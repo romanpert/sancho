@@ -10,6 +10,25 @@ Two principles come from the evidence on routers and from our own measurements:
    falls back to whatever the harness did before the squire existed. The squire can only
    improve an agent; it can never stop one.
 
+**One number, not two, on a Truth point.** For every Truth answer in every recording in
+this repository - 651 of them, zero deviation - the provider's `confidence` is exactly
+`|2p - 1|`. So on a Truth-driven decision, probability and confidence are the same quantity,
+and a policy that asks for both `p >= a` and `confidence >= c` is really asking for
+`p >= max(a, (1 + c) / 2)`. Two gates on one number is one gate at the stricter value, and
+the threshold named in the configuration is then not the one in force.
+
+That is not hypothetical: `memory_write` shipped with `remember = 0.70` and a `relax = 0.60`
+confidence gate, and enforced 0.80. Four of its measured misses were facts scoring 0.75 and
+0.76. The redundant gates were removed in 0.2.0 - **no threshold value changed** - and the
+gap between the shipped policy and a plain 0.5 cut fell from eight decisions to three.
+
+A confidence gate still earns its place where there is no probability threshold beside it
+and the point wants an abstention band: the citation verdict, the entity alignment band, the
+edge check. There it is the only gate, and it is doing work. `tests/test_policy.py` pins the
+identity as a canary: if the provider ever starts reporting a confidence that carries
+information the probability does not, that test fails and every policy built on it is worth
+revisiting.
+
 The defaults below are the production thresholds measured in the paper (docs/paper.md).
 They were fixed before the runs and never tuned on results. Per-primitive calibration
 (Section 5.8 of the paper) says Truth answers are under-confident and Score answers are

@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from ..contract import Decision, Question, Truth
-from ..policy import Thresholds, confident, probability
+from ..policy import Thresholds, probability
 from ..text import truncate
 
 FACT_LIMIT = 500
@@ -144,7 +144,7 @@ def decide_write(decision: Decision, t: Thresholds) -> Write:
     pd, ps, pr = probability(durable), probability(specific), probability(derivable)
     if durable.empty or specific.empty:
         return Write(False, "no data: harness default", pd, ps, pr)
-    if not confident(durable, t.relax) or pd < t.remember:
+    if pd < t.remember:
         return Write(False, f"not durable ({pd:.2f})", pd, ps, pr)
     if ps < t.remember:
         return Write(False, f"not specific enough ({ps:.2f})", pd, ps, pr)
@@ -240,7 +240,7 @@ def decide_collision(
     ps, pn = probability(against), probability(nothing)
     if against.empty or nothing.empty:
         return Reconciliation("keep_both", "no data: both kept", ps, pn)
-    if pn >= t.act and confident(nothing, t.act):
+    if pn >= t.act:
         return Reconciliation("duplicate", f"adds nothing ({pn:.2f})", ps, pn)
     if ps < t.act:
         return Reconciliation("keep_both", f"no contradiction ({ps:.2f})", ps, pn)
@@ -308,6 +308,6 @@ def decide_recall(decision: Decision, t: Thresholds) -> Recall:
     p = probability(answer, default=1.0)
     if answer.empty:
         return Recall(True, "no data: look", p)
-    if p <= 1.0 - t.act and confident(answer, t.act):
+    if p <= 1.0 - t.act:
         return Recall(False, f"self-contained ({p:.2f})", p)
     return Recall(True, f"may need what we know ({p:.2f})", p)

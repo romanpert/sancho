@@ -8,9 +8,9 @@ Cases: 124 - decision calls: 122 - input tokens: 84092 - cost: 0.0035 USD
 | extract_gate | 16 | 100% | 15/16 = 94% | [72%, 99%] | 297 ms |
 | goal_met | 14 | 100% | 14/14 = 100% | [78%, 100%] | 257 ms |
 | memory_collision | 16 | 100% | 14/16 = 88% | [64%, 97%] | 311 ms |
-| memory_write | 16 | 100% | 12/16 = 75% | [51%, 90%] | 344 ms |
+| memory_write | 16 | 100% | 16/16 = 100% | [81%, 100%] | 344 ms |
 | recall | 14 | 100% | 14/14 = 100% | [78%, 100%] | 274 ms |
-| redundant_page | 16 | 100% | 11/16 = 69% | [44%, 86%] | 282 ms |
+| redundant_page | 16 | 100% | 14/16 = 88% | [64%, 97%] | 282 ms |
 | repeats_check | 12 | 100% | 12/12 = 100% | [76%, 100%] | 281 ms |
 
 | Binary point | n | Correct at 0.5 | AUC | Brier | ECE |
@@ -26,9 +26,9 @@ Cases: 124 - decision calls: 122 - input tokens: 84092 - cost: 0.0035 USD
 
 | Band | n | Agreement |
 |---|---|---|
-| 0.00-0.40 | 11 | 6/11 = 55% |
-| 0.40-0.60 | 7 | 4/7 = 57% |
-| 0.60-0.75 | 9 | 5/9 = 56% |
+| 0.00-0.40 | 11 | 8/11 = 73% |
+| 0.40-0.60 | 7 | 6/7 = 86% |
+| 0.60-0.75 | 9 | 8/9 = 89% |
 | 0.75-0.90 | 31 | 30/31 = 97% |
 | 0.90-1.00 | 63 | 62/63 = 98% |
 
@@ -36,4 +36,4 @@ Cases: 124 - decision calls: 122 - input tokens: 84092 - cost: 0.0035 USD
 
 | Primitive | n | Agreement | Mean confidence | ECE |
 |---|---|---|---|---|
-| truth | 121 | 88% | 0.80 | 0.084 |
+| truth | 121 | 94% | 0.80 | 0.142 |

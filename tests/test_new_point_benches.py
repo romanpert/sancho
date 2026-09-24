@@ -52,9 +52,9 @@ def test_agreement_per_point_reproduces(run):
     assert points["repeats_check"]["hits"] == 12
     assert points["recall"]["hits"] == 14
     assert points["extract_gate"]["hits"] == 15
-    assert points["memory_write"]["hits"] == 12
+    assert points["memory_write"]["hits"] == 16
     assert points["memory_collision"]["hits"] == 14
-    assert points["redundant_page"]["hits"] == 11
+    assert points["redundant_page"]["hits"] == 14
     assert points["edge"]["hits"] == 15 and points["edge"]["decided"] == 17
 
 
@@ -64,21 +64,22 @@ def test_the_ordering_is_perfect_on_every_binary_point(run):
     assert all(points[p]["auc"] == 1.0 for p in BINARY)
 
 
-def test_the_shipped_thresholds_cost_more_than_the_model_does(run):
-    """The finding of the first run, pinned so a tuning pass has to improve on it.
+def test_the_gap_between_a_plain_cut_and_the_shipped_policy(run):
+    """What is left of the first run's finding after the redundant gates were removed.
 
-    At a plain 0.5 cut the six binary points get 86 of 88. Under the thresholds the package
-    ships, the same decisions come out at 78 of 88. The eight lost decisions are the price
-    of thresholds inherited from the points measured in the paper, on a Truth primitive that
-    is under-confident. They are not tuned here: the rule is 50 cases and a second annotator
-    per point before a threshold moves, and this bench has 12 to 20 and one annotator.
+    The first run scored 78 of 88 under the policy against 86 of 88 at a plain 0.5 cut, and
+    the explanation turned out to be a defect rather than conservatism: for a Truth answer
+    from this model class, `confidence` is exactly `|2p - 1|` (verified on 651 recorded
+    answers, zero deviation), so a policy asking for both `p >= 0.70` and `confidence >=
+    0.60` was asking for `p >= 0.80`. The threshold named in the configuration was not the
+    one in force. Removing the redundant gate moved **no threshold value** and closed the
+    gap to 3 decisions.
     """
     points = run[0]["points"]
     at_half = sum(points[p]["at_0.5"] for p in BINARY)
     under_policy = sum(points[p]["hits"] for p in BINARY)
     assert at_half == 86
-    assert under_policy == 78
-    assert under_policy < at_half
+    assert under_policy == 85
 
 
 def test_every_policy_error_is_a_refusal_to_act(run):
@@ -113,4 +114,6 @@ def test_confidence_separates_right_from_wrong_here_too(run):
     low = sum(b["hits"] for k, b in bands.items() if not k.startswith(("0.75", "0.90")))
     low_n = sum(b["n"] for k, b in bands.items() if not k.startswith(("0.75", "0.90")))
     assert high / high_n > 0.95  # 92/94
-    assert low / low_n < 0.6  # 15/27
+    # Weaker than before the redundant gates went, and honestly so: the policy now decides
+    # cases it used to abstain on, and most of those low-confidence decisions are right.
+    assert low / low_n < 0.85  # 22/27

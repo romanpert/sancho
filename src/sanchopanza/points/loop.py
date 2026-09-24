@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..contract import Decision, Question, Truth
-from ..policy import Thresholds, confident, probability
+from ..policy import Thresholds, probability
 from ..text import truncate
 
 GOAL_LIMIT = 500
@@ -122,12 +122,12 @@ def decide(decision: Decision, t: Thresholds) -> LoopAdvice:
     met, repeat = decision.answer("goal_met"), decision.answer("repeats_check")
     pm, pr = probability(met), probability(repeat)
     notes: list[str] = []
-    if not met.empty and pm >= t.saturated and confident(met, t.saturated):
+    if not met.empty and pm >= t.saturated:
         notes.append(
             f"what you were asked for appears to be established already ({pm:.2f}): "
             "consider writing the answer instead of gathering more"
         )
-    if not repeat.empty and pr >= t.saturated and confident(repeat, t.saturated):
+    if not repeat.empty and pr >= t.saturated:
         notes.append(
             f"this check looks like one already run with the same outcome ({pr:.2f}): "
             "re-running it is unlikely to change anything"

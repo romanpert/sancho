@@ -6,6 +6,7 @@
 
 Price (2026-09): 0.042 USD per million input tokens, output free. The price is a
 constructor argument, not a constant, so a change is configuration, not code.
+The model defaults to a pinned version rather than an alias: see DEFAULT_MODEL.
 Retries: 429 and 529 with bounded exponential backoff. No unbounded loops.
 """
 
@@ -32,7 +33,15 @@ from ..media import attachments_in
 
 BASE_URL = "https://api.typesafe.ai"
 PATH = "/v1/systemone"
-DEFAULT_MODEL = "jev-latest"
+# **Pinned, not an alias, and the vendor says to pin.** Their own model page: "An alias
+# moves when a new release ships, so the answers behind it can change without a change on
+# your side... If you have tuned confidence thresholds against a specific version, pin
+# that version's ID instead of the alias and move to the new one on your own schedule."
+# This package is nothing but tuned thresholds, and a non-generative model gives no
+# "the output looks odd" signal when it moves: no error, no failing test, no log line.
+# This is the version every number in docs/paper.md was measured against. Pass
+# `model="jev-latest"` deliberately if you want to track the alias.
+DEFAULT_MODEL = "jev-1.13.0"
 DEFAULT_PRICE_PER_MTOK = 0.042
 
 KIND_TO_WIRE = {"choice": "choice", "score": "score", "truth": "noul"}

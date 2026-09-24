@@ -187,6 +187,6 @@ def decide_redundancy(decision: Decision, t: Thresholds) -> Redundancy:
     p = probability(answer)
     if answer.empty:
         return Redundancy(False, "no data: keep", p)
-    if p >= t.redundant and confident(answer, t.act):
+    if p >= t.redundant:
         return Redundancy(True, f"adds nothing new ({p:.2f})", p)
     return Redundancy(False, f"may add something ({p:.2f})", p)

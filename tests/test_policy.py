@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
+
+import pytest
 
 from sanchopanza import Decision, Thresholds
 from sanchopanza.points import citation, routing, search, triage
+from sanchopanza.policy import confident
 from sanchopanza.providers import FixedDecider
 
 from .helpers import choice, decision, score, squire, thresholds, yes
@@ -159,3 +163,48 @@ def test_the_sample_is_roughly_the_fraction_asked_for():
         sq.record(decision("triage", relevant=yes(i / 400), evidence=yes(0.5)))
     taken = sum(_flags(journal))
     assert 40 <= taken <= 120  # 20 % of 400, loose: it is a hash, not a shuffle
+
+
+# --- the identity that makes two gates into one --------------------------------------------
+
+
+def test_truth_confidence_is_a_function_of_the_probability_in_every_recording():
+    """A canary on the provider, and the reason several policies had a hidden threshold.
+
+    For every Truth answer in every recording in this repository, `confidence` is exactly
+    `|2p - 1|`: 651 answers, zero deviation. So on a Truth-driven point, probability and
+    confidence are the same number, and asking for both `p >= a` and `confidence >= c` is
+    asking for `p >= max(a, (1 + c) / 2)`. That is how `memory_write` came to enforce 0.80
+    while its configuration said 0.70.
+
+    If this test ever fails, the provider has started reporting a confidence that carries
+    information the probability does not, and every policy built on the identity is worth
+    revisiting. That is a good thing to be told loudly.
+    """
+    import json
+
+    root = Path(__file__).resolve().parents[1] / "fixtures"
+    files = ["public-benches.jsonl", "new-points.jsonl", "steerability.jsonl"]
+    seen = 0
+    for name in files:
+        path = root / name
+        if not path.exists():
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            for answer in (json.loads(line).get("answers") or {}).values():
+                if answer.get("kind") == "truth" and answer.get("truth") is not None:
+                    seen += 1
+                    expected = abs(2 * answer["truth"] - 1)
+                    assert answer["confidence"] == pytest.approx(expected, abs=1e-9)
+    if seen == 0:
+        pytest.skip("no recordings present")
+    assert seen > 600
+
+
+def test_the_effective_threshold_of_a_confidence_gate_on_a_truth():
+    """`confident(answer, c)` on a Truth is `p >= (1 + c) / 2` or `p <= (1 - c) / 2`."""
+    for c in (0.60, 0.70, 0.75, 0.80):
+        high, low = (1 + c) / 2, (1 - c) / 2
+        assert confident(yes(high + 1e-9), c) and confident(yes(low - 1e-9), c)
+        assert not confident(yes(high - 1e-3), c)
+        assert not confident(yes(low + 1e-3), c)

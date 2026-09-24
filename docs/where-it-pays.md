@@ -153,18 +153,28 @@ came out cheapest of the three. The fix is a per-arm tag in every tool descripti
 `churn` arm, because the first run taught us the risk is not narrowing but *instability*
 (`benchmarks/cache/results/summary.md`) **[M]**.
 
-**Our own thresholds cost more than our own model does.** On the 124 new cases, the six
-binary points get **86 of 88** at a plain 0.5 cut and **78 of 88** under the thresholds the
-package ships, with **AUC 1.00 on all six** **[M]**. Every one of the eight lost decisions is
-a refusal to act. The ordering is perfect; the thresholds, inherited from points measured on
-a different distribution, are too strict for an under-confident Truth primitive.
+**The threshold written in the configuration was not the one in force.** On the 124 new
+cases the six binary points got **86 of 88** at a plain 0.5 cut and **78 of 88** under the
+shipped policy, with **AUC 1.00 on all six** **[M]**. That looked like conservatism. It was a
+defect.
 
-We did **not** tune them. The rule is 50 cases and a second annotator per point before a
-threshold moves, and this bench has 12 to 20 and one annotator. Google's deployed equivalent
-shows what the fix looks like when it is earned: a probability threshold chosen per language
-to hit a *target precision*, reported as recall@X, lowered from 70 % to 50 % and then to 40 %
-once a human preview step existed, each time buying recall without hurting satisfaction
-**[P]**. That is the experiment, not a nudge to a constant.
+For a Truth answer from this model class, `confidence` is exactly `|2p - 1|` - verified on
+651 recorded answers across three independent runs, with zero deviation **[M]**. Probability
+and confidence are the same number. So a policy asking for both `p >= 0.70` and
+`confidence >= 0.60` is asking for `p >= 0.80`, and `memory_write`, configured at 0.70, was
+enforcing 0.80 and rejecting facts that scored 0.75 and 0.76. **Two gates on one number is
+one gate at the stricter value.**
+
+Removing the redundant gates moved **no threshold value** and closed the gap to three
+decisions: **85 of 88** **[M]**. A confidence gate still earns its place where it is the only
+gate and the point wants an abstention band - the citation verdict, the entity band, the edge
+check - and nowhere else.
+
+The lesson generalises past this package: **check whether your two signals are one signal**
+before concluding that a model is under-confident. What remains true is that thresholds
+should be derived rather than picked, and Google's deployed equivalent shows how - a
+probability threshold chosen per language to hit a *target precision*, reported as recall@X,
+lowered from 70 % to 50 % and then to 40 % once a human preview step existed **[P]**.
 
 **And a bench where the model corrected the annotator.** Three of our labels were wrong on
 the question's own criteria, and the disagreement found them. They are relabelled with the

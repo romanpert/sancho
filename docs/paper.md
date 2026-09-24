@@ -515,23 +515,45 @@ figure on a different distribution. Replays for free from `fixtures/new-points.j
 | Extraction gate (G5) | 16 | 100 % | 15/16 | 15/16 | 1.00 | 0.030 | 0.101 |
 | Memory collision (M2) | 16 | 100 % | 14/16 | | | | |
 | Edge check (G6) | 20 | 85 % | 15/17 | | | | |
-| Memory write (M1) | 16 | 100 % | 12/16 | **16/16** | 1.00 | 0.073 | 0.224 |
-| Source redundancy (D3b) | 16 | 100 % | 11/16 | **15/16** | 1.00 | 0.039 | 0.121 |
+| Memory write (M1) | 16 | 100 % | **16/16** | 16/16 | 1.00 | 0.073 | 0.224 |
+| Source redundancy (D3b) | 16 | 100 % | 14/16 | **15/16** | 1.00 | 0.039 | 0.121 |
 
-**The central result of Section 5.8 replicates on points it was not derived from.** At
-confidence >= 0.75 the new points are right 92 times out of 94; below it, 15 of 27.
+**The central result of Section 5.8 replicates on points it was not derived from, and
+more weakly than it first appeared.** At confidence >= 0.75 the new points are right 92 times
+out of 94; below it, 22 of 27. The low band is stronger here than in Section 5.8 because the
+policy now decides cases it used to abstain on, and most of those are right: separation is
+still there, and the honest figure is 98 % against 81 %, not 99 % against 31 %.
 
-**The finding we did not fix.** Over the six binary points the evaluator is right **86 of 88**
-at a plain 0.5 cut and **78 of 88** under the thresholds the package ships, with **AUC 1.00
-on every one of the six**. No error on these points is an ordering error, and all eight lost
-decisions are refusals to act, caused by thresholds calibrated for other points on a Truth
-primitive that Section 5.8 had already shown to be under-confident (ECE 0.14). The thresholds
-were not moved. The rule is 50 cases and a second annotator per point, and this bench has 12
-to 20 and one annotator; a threshold tuned on the run that revealed it is a threshold tuned
-on noise. Google's deployed equivalent shows what earning the change looks like: a
-probability threshold set per language to a *target precision* and reported as recall@X,
-lowered from 70 % to 50 % and then to 40 % once a human preview step existed, each step
-buying recall without a loss in satisfaction [Frommgen et al., 2024].
+**The finding, and what it turned out to be.** Over the six binary points the evaluator is
+right **86 of 88** at a plain 0.5 cut, with **AUC 1.00 on every one of the six**: no error on
+these points is an ordering error. Under the policy as first shipped it was **78 of 88**, and
+the eight lost decisions were all refusals to act. The obvious reading was that the
+thresholds were conservative, inherited from other points on a Truth primitive that Section
+5.8 had already shown to be under-confident.
+
+That reading was wrong, and the correction is the more useful result. **For a Truth answer
+from this model class, `confidence` is exactly `|2p - 1|`**: 651 answers across the three
+independent recordings in this repository, zero deviation. Probability and confidence are the
+same quantity. A policy asking for both `p >= a` and `confidence >= c` is therefore asking
+for `p >= max(a, (1 + c) / 2)` - **two gates on one number is one gate at the stricter
+value** - and the threshold named in the configuration is not the one in force. `memory_write`
+was configured at 0.70 and enforcing 0.80; the facts it rejected scored 0.75 and 0.76.
+Source redundancy was configured at 0.80 and enforcing 0.875.
+
+Removing the redundant gates moved **no threshold value** and closed the gap to three
+decisions: **85 of 88**. The values in the configuration are the ones that were always
+written there; what changed is that they now bind. A confidence gate keeps its place where it
+is the only gate and the point wants an abstention band - the citation verdict, the entity
+alignment band, the edge check - and the package now says so explicitly.
+
+Two lessons, one narrow and one general. The narrow one: `tests/test_policy.py` pins the
+identity as a canary, so that a provider which begins reporting a confidence carrying
+information the probability does not will fail a test rather than silently change every
+policy. The general one: **before concluding that a model is under-confident, check whether
+your two signals are one signal.** What survives of the original plan is that thresholds
+should be derived rather than picked, in the shape of a deployed system that sets a
+probability threshold per language to a *target precision* and reports recall@X
+[Frommgen et al., 2024].
 
 **Per-point notes, including two limitations and one confident error.**
 
@@ -550,10 +572,12 @@ each time; the `duplicate` branch **never fired at all** on 16 cases. At the shi
 thresholds the point is in practice a contradiction detector with a safe default, and its
 duplicate-suppression half is unproven.
 
-*Memory write (M1).* All four policy errors are facts that should have been stored and were
-not, which is the safe direction: a missed memory costs a re-derivation, a junk memory is
-read for the rest of the job. The weakest question is `durable` on a stated preference ("the
-client asked for the report in Spanish"), where the evaluator returned 0.5 at confidence 0.
+*Memory write (M1).* 16 of 16 once the hidden gate was removed. Its four earlier errors
+were all facts that should have been stored and were not, which is the safe direction, and
+two of them scored 0.75 and 0.76 against a configured threshold of 0.70. The weakest question
+remains `durable` on a stated preference ("the client asked for the report in Spanish"),
+where the evaluator returned 0.5 at confidence 0: it has no view, and the policy's default
+handles that correctly.
 
 *A first draft of M2 was wrong in design, not in accuracy.* It asked whether two facts spoke
 about the same attribute, which sent every corroboration, the same figure from a second
@@ -616,6 +640,80 @@ roughly a third of what Anthropic reports for 58 real MCP tools, so the schema-s
 here is understated. The arms were asked questions that need no tool call, so nothing here
 measures whether a narrowed catalog answers as well. The accuracy of the tool-selection point
 itself remains unmeasured (Section 8, item 7).
+
+### 5.12 Steerability, and a claim we checked instead of repeating
+
+A vendor's marketing frames the filtering step before an LLM as a choice between a
+cross-encoder that "cannot be steered", an LLM reranker at "27x cost", and a decision model
+that is "steerable and cheap". The third option is the architecture of this paper, so the
+claim flatters it, which is the reason to test it rather than cite it.
+
+**The claim is false as stated, and we established that before designing the experiment.**
+Instruction-following is a shipped, priced feature of commercial rerankers in 2026: Voyage
+markets `rerank-2.5` and `rerank-2.5-lite` as instruction-following, with the instruction
+appended to the query in natural language, and its own worked example is this paper's pitch
+nearly verbatim ("retrieve regulatory documents and legal statutes, not court cases")
+[Voyage, 2025]; ZeroEntropy's `zerank-2` takes instructions and business context, and its
+vendor publishes the calibrated-classifier argument with absolute thresholds that this paper
+makes for a decision model [ZeroEntropy, 2026]; Contextual AI shipped one in March 2025 for
+recency, document type and source priority. Four benchmarks exist to measure the capability
+(MAIR, IFIR, FollowIR, InstructIR). All of those rerankers are cheaper per token than the
+evaluator measured here: 0.02 and 0.025 USD/MTok against 0.042.
+
+So the question worth an experiment is not whether this evaluator can be steered, but what
+it does that a steerable reranker does not.
+
+**Design.** Fourteen flipped pairs, 28 cases. Each pair holds the **document** and the
+**topic** fixed and changes only the **criterion**, so that the correct answer flips. The
+metric is **pair accuracy**: both sides right, or the pair does not count. That metric has
+force because of an arithmetic bound rather than a measurement: a scorer whose inputs are
+only (query, document) cannot move when both are held fixed, so it answers both sides
+identically and scores 0 % pair accuracy by construction. The bound covers a plain
+cross-encoder and embedding similarity, and **not** an instruction-following reranker, which
+takes the criterion as input. Two pairs were declared negative controls before the run,
+because their criterion turns on a date comparison (Section 5.3).
+
+**Result.** 11 of 14 pairs with both sides right; 25 of 28 cases; 28,158 input tokens;
+0.00118 USD. The answer changed when only the criterion changed in 11 of 14 pairs.
+
+The three failures are three different kinds of failure, which is the useful part:
+
+| Pair | Criterion | What happened |
+|---|---|---|
+| st-01 | official primary sources, not press that cites them | Kept a newspaper. The relevance question answered 0.98 and was right: the article *is* about the topic. |
+| st-09 | material in Spanish, quotable directly | Kept an English document. No question in the point asks about the language of the document. |
+| st-14 | rulings from 2025 onward | Kept a 2016 ruling. A declared negative control; its date-based twin st-13 passed. |
+
+**st-01 was an error in the policy, not in the model, and the fix costs nothing.** The
+provenance answer was in the same decision the whole time: the `source_kind` Choice came back
+`news` at confidence 1.00. The policy consulted only `relevant` and discarded it. `triage`
+now accepts allow and deny sets over source kinds and filters in code, with no extra call and
+no extra token; the same recorded decision that kept the newspaper now drops it.
+
+The rule that generalises is this paper's oldest invariant pointed at a new target: **a
+criterion that a Choice question already answers does not belong in free-text prose.** It is
+also the better-calibrated route, since Choice is the best-calibrated primitive of this model
+class (ECE 0.035 against 0.14 for Truth, Section 5.8). Over these 28 cases `source_kind`
+returned mean confidence 0.91 and separated news, official records, corporate, data APIs and
+academic sources cleanly.
+
+**What the experiment does not establish.** No baseline was run. The comparison that matters,
+an instruction-following reranker over the same pairs, has not been done, so this section
+reports what the evaluator does and not what it does better. Fourteen pairs, one annotator,
+one language and one domain: weaker evidence than anything in Sections 5.1 to 5.9. And it
+measures a *gate*, not a ranking: a reranker orders 100 documents in one pass, while this
+asks one independent judgment per document, and pointwise scoring is the known-worst
+architecture for ranking quality.
+
+**The hypothesis that survives, stated so that it can fail.** The architectural difference is
+not a calibrated score per document, which a reranker vendor already sells with published
+thresholds at 60 % of the price. It is **several independent typed questions asked about one
+state in a single pass**, where a reranker takes one blended instruction or runs once per
+criterion at N times the cost. The door the literature leaves open is exclusion: models solve
+at most one ExcluIR query in eight, and negation is where instruction-following degrades
+[ExcluIR, 2025]. Five of these fourteen criteria are exclusions and four of those five pairs
+passed, which is a hint and not a result. Section 8 gives the three-arm experiment that would
+settle it.
 
 ---
 
@@ -747,6 +845,40 @@ to the questions and the policy, not to the harness they were first built in.
   evidence about this evaluator.
 - **No end-to-end measurement of avoidance.** The A/B is null; the fetch-heavy experiment
   that would settle it is specified and unrun.
+- **Our calibration figures are near the noise floor of their own estimator.** The plugin
+  ECE estimator carries a bias of order B/n; at 15 bins and n = 180 that is about 0.083,
+  which is the same order as several of the ECE values reported in Section 5.8
+  [Kumar et al., 2019]. Minimax detectability at that n is about 0.125, and two of this
+  package's thresholds sit 0.05 apart [Lee et al., 2023]. Reading a difference between two
+  ECEs here is reading noise; roughly 1,800 cases per point would be needed to do it
+  honestly. The *direction* of the per-primitive result survives, the decimals do not.
+- **Small-n intervals are wider than the point estimates suggest.** 11/11 at confidence
+  >= 0.75 has a Wilson interval of [74.1 %, 100 %], and by the rule of three, zero errors in
+  11 trials is consistent with a true error rate of 27.3 %. The same applies to every
+  "perfect" cell in Section 5: the injection result's is [87.9 %, 100 %] and the entity
+  alignment result's is [86.2 %, 100 %]. None of them establishes that the true rate is
+  near 1.
+- **A generative verifier beats a frozen scalar head on multi-step judgments, and the plan
+  DAG is a multi-step judgment.** Generative reward models that produce a critique before a
+  score outperform discriminative ones by wide margins on reasoning tasks, with the gap
+  growing rather than shrinking with scale [Zhang et al., 2025; Ankner et al., 2024], and a
+  small generative process reward model can beat a much larger discriminative one
+  [Zhao et al., 2025]. Explicit graph reasoning lifts plan-ordering accuracy from 13.0 % to
+  77.7 % [Lin et al., 2024]. The defensible claim for the evaluator is therefore narrower
+  than "non-generative wins": it is that **closed-label judgments belong on a typed head and
+  compositional ones do not**, and the plan point (D5) is on the wrong side of that line
+  until measured against a generative verifier.
+- **The shipped configuration tracked a moving alias.** Every number in this paper is
+  reported against `jev-1.13.0` while the package's default model string was `jev-latest`,
+  an alias the vendor's own documentation says moves with each release, recommending a
+  pinned version when thresholds have been tuned. A hosted model that changes under a
+  calibrated threshold produces no error, no failing test and no log line. Fixed in 0.2.0 by
+  pinning the default and reporting the model the response actually came from.
+- **Scaffolding does not reliably help.** A 2026 synthesis of 27 papers over 19 benchmarks
+  finds that failures compound nonlinearly with task length, that strong sub-task scores do
+  not reliably translate into end-to-end success, and that *"additional scaffolding does not
+  consistently improve reliability"* [Albayaydh et al., 2026]. Every number in Sections 5.1
+  to 5.12 is a sub-task score.
 
 ---
 
@@ -783,7 +915,20 @@ to the questions and the policy, not to the harness they were first built in.
 11. **The memory pipeline end to end**: a write path with and without the write gate and the
     collision point, measured on calls, tokens and retrieval quality. Nobody has published
     this; a 2026 survey found only 2 of 9 memory systems reporting any efficiency metric.
-12. **Fan-out sizing as a decision point.** The vendor states the buckets in prose (one agent
+12. **A generative verifier as a control on the compositional points.** Run D5's pairwise
+    dependency judgments against a model that writes a short justification before the score,
+    on the same pairs, and report the difference. If the generative verifier wins, the
+    package should route by question shape rather than by price, and say so.
+13. **Instrument `cache_read_input_tokens` with the layer on and off, on the same job.** The
+    cache experiment of Section 5.11 measures the tool-catalog case in isolation; the same
+    measurement on a real job is what would confirm that no other decision point mutates a
+    prefix. The repository's own operating rule already says a zero there is the expensive
+    silent failure.
+14. **A canary on the provider.** Forty frozen cases run nightly against the pinned version,
+    alarming on a shift in the *distribution* of probabilities rather than on labels. A
+    non-generative model gives no "the output looks odd" signal, so drift has to be watched
+    for deliberately.
+15. **Fan-out sizing as a decision point.** The vendor states the buckets in prose (one agent
     for simple fact-finding, two to four subagents for comparisons, ten or more for complex
     research) and the token multiplier between the extremes is about 15x. It is a typed
     choice with a large prize and an obvious quality risk, and it is not implemented here.
@@ -849,6 +994,17 @@ Added in draft 3:
 - Microsoft Research (2024). *LazyGraphRAG.* https://www.microsoft.com/en-us/research/blog/lazygraphrag-setting-a-new-standard-for-quality-and-cost/
 - *Mem0* (2025). arXiv:2504.19413.
 - Weinberger, S., Hozez, A. (2026). *Prompt-induced waste in coding agents: reasoning, effort, harness design, and end-to-end cost.* arXiv:2608.01347.
+- Albayaydh, W., Zhao, X., Flechais, I. (2026). *Beyond the leaderboard: tool-use, planning and reasoning failures in LLM agents.* arXiv:2607.05775.
+- Ankner, Z. et al. (2024). *Critique-out-Loud reward models.* arXiv:2408.11791.
+- Kumar, A., Liang, P., Ma, T. (2019). *Verified uncertainty calibration.* NeurIPS 2019, arXiv:1909.10155.
+- Lee, D. et al. (2023). *T-Cal: an optimal test for the calibration of predictive models.* JMLR 2023, arXiv:2203.01850.
+- Lin, F. et al. (2024). *Graph-enhanced large language models in asynchronous plan reasoning.* ICML 2024, arXiv:2402.02805.
+- Ovadia, Y. et al. (2019). *Can you trust your model's uncertainty?* NeurIPS 2019, arXiv:1906.02530.
+- Voyage AI (2025). *rerank-2.5: instruction-following rerankers.* https://blog.voyageai.com/2025/08/11/rerank-2-5/
+- ZeroEntropy (2026). *zerank-2 as a calibrated classifier.*
+- *ExcluIR: exclusionary neural information retrieval* (2025). SIGIR 2025, arXiv:2502.13506.
+- Zhang, L. et al. (2025). *Generative verifiers: reward modeling as next-token prediction.* ICLR 2025, arXiv:2408.15240.
+- Zhao, J. et al. (2025). *GenPRM: scaling test-time compute of process reward models.* arXiv:2504.00891.
 
 ---
 

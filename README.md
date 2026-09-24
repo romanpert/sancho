@@ -97,19 +97,22 @@ Added in 0.2.0, first run measured on 124 new cases
 | Method | Decides | Measured |
 |---|---|---|
 | `check_loop` | Whether the goal is already met, or a check repeats one already run | **14/14** and **12/12**, AUC 1.00. Attacks the largest measured waste in an agent loop: 18x the clean-run cost, no success gain |
-| `remember` | Whether a fact is worth writing to long-term memory | 16/16 at a 0.5 cut, 12/16 under the shipped thresholds, AUC 1.00 |
+| `remember` | Whether a fact is worth writing to long-term memory | **16/16**, AUC 1.00 |
 | `reconcile` | Whether a new fact contradicts, duplicates or complements a stored one | **14/16**; recency stays in code, because dates are the model's declared weakness |
 | `needs_recall` | Whether a turn needs a memory lookup at all | **14/14**, AUC 1.00, ECE 0.051 |
 | `gate_extraction` | Whether a chunk is worth a generative extraction call | **15/16**, AUC 1.00 |
 | `verify_edge` | Whether the text states a proposed triple, in that direction | 15/17 when deciding; **8 edges committed, 0 of them wrong** |
-| `triage_redundant` | Whether a page repeats what the agent already holds | 15/16 at a 0.5 cut, 11/16 under the shipped thresholds, AUC 1.00 |
+| `triage_redundant` | Whether a page repeats what the agent already holds | **14/16**, 15/16 at a plain 0.5 cut, AUC 1.00 |
 
-> **What that run actually found, and we did not tune it away.** Across the six binary
-> points the model is right **86 times out of 88** at a plain 0.5 cut and **78 out of 88**
-> under the thresholds this package ships, with **AUC 1.00 on every one**. The ordering is
-> perfect; the thresholds are too strict. All eight lost decisions are refusals to act, so
-> the layer is safe as shipped and leaving money on the table. Moving a threshold needs 50
-> cases and a second annotator per point, and this bench has 12 to 20 and one annotator.
+> **What that run found, and what it turned out to be.** Across the six binary points the
+> model is right **86 times out of 88** at a plain 0.5 cut, with **AUC 1.00 on every one**:
+> no error is an ordering error. Under the shipped policy it was 78 of 88, and the eight
+> lost decisions looked like conservative thresholds. They were not. For a Truth answer from
+> this model, `confidence` is exactly `|2p - 1|` - 651 recorded answers, zero deviation - so
+> a policy asking for both `p >= 0.70` and `confidence >= 0.60` was asking for `p >= 0.80`,
+> and the threshold named in the configuration was not the one in force. Removing the
+> redundant gate changed **no threshold value** and closed the gap to three decisions:
+> **85 of 88**.
 
 Full method, intervals and caveats: [the paper](docs/paper.md). Benches and how to run them:
 [docs/benches.md](docs/benches.md).

@@ -75,6 +75,8 @@ class Squire:
         self._cap_warned = False
         self._last_selection: frozenset[str] | None = None
         self._churn_warned = False
+        self._model_seen: str | None = None
+        self._model_warned = False
 
     # --- plumbing --------------------------------------------------------------------
 
@@ -115,10 +117,39 @@ class Squire:
         return decision
 
     def record(self, decision: Decision, **outcome: Any) -> None:
+        self._warn_if_the_model_changed(decision)
         event = decision_event(decision, outcome)
         if self._sampled_for_audit(decision):
             event["audit"] = True
         self._journal.record("decision", event)
+
+    def _warn_if_the_model_changed(self, decision: Decision) -> None:
+        """Say so, once, if two different models answered within one session.
+
+        Thresholds are calibrated against a version. The vendor's own guidance is to pin one
+        rather than track an alias, because "an alias moves when a new release ships, so the
+        answers behind it can change without a change on your side". A non-generative model
+        gives no signal when that happens: no error, no failing test, no odd-looking output.
+        The one observable is the model id the response carries, so the squire watches it.
+        """
+        model = decision.model
+        if not model or model == "-" or decision.failed:
+            return
+        if self._model_seen is None:
+            self._model_seen = model
+            return
+        if model != self._model_seen and not self._model_warned:
+            self._model_warned = True
+            self._journal.record(
+                "warning",
+                {
+                    "message": "two different model versions answered within one session. "
+                    "Thresholds are calibrated per version; pin one instead of tracking an "
+                    "alias.",
+                    "first": self._model_seen,
+                    "now": model,
+                },
+            )
 
     def _sampled_for_audit(self, decision: Decision) -> bool:
         """Is this decision in the pre-registered sample to be re-labelled later?
