@@ -10,6 +10,7 @@ Points and their inputs / labels:
     routing          task, brief                       light | default | deep
     search           query, previous, brief            cut | cheap | full
     triage           purpose, title, url, text         keep | drop
+    steerability     (same as triage, plus `pair`)      keep | drop, scored by pair
     citation         claim, section                    supported | contradicted | unsupported
     numeric_citation claim, section                    (same; numbers inside)
     injection        purpose, text                     true | false
@@ -64,6 +65,7 @@ BINARY_POINTS = frozenset(
         "redundant_page",
         "goal_met",
         "repeats_check",
+        "steerability",
     }
 )
 # Points whose label is a word rather than a boolean, but whose decision is still binary:
@@ -75,6 +77,7 @@ POSITIVE_LABEL = {
     "recall": "look",
     "extract_gate": "extract",
     "redundant_page": "drop",
+    "steerability": "keep",
 }
 PRIMITIVE_OF = {
     "routing": "score",
@@ -97,6 +100,7 @@ PRIMITIVE_OF = {
     "redundant_page": "truth",
     "goal_met": "truth",
     "repeats_check": "truth",
+    "steerability": "truth",
 }
 
 
@@ -153,7 +157,11 @@ async def _run_case(
         )
         if r.route == "cut" and r.redundant_probability >= 1.0:
             confidence = 1.0
-    elif point == "triage":
+    elif point in ("triage", "steerability"):
+        # `steerability` is the triage point asked twice about the same document with
+        # different criteria. It is named apart so that those cases never mix with the
+        # page-triage numbers of the paper, and so its own metric (pair accuracy) is
+        # computed over a set whose pairs are complete.
         r = await squire.triage_page(
             purpose=inp["purpose"],
             title=inp.get("title", ""),

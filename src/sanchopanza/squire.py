@@ -142,11 +142,26 @@ class Squire:
         return result
 
     async def triage_page(
-        self, *, purpose: str, title: str = "", url: str = "", text: str
+        self,
+        *,
+        purpose: str,
+        title: str = "",
+        url: str = "",
+        text: str,
+        allowed_kinds: Iterable[str] | None = None,
+        denied_kinds: Iterable[str] | None = None,
     ) -> triage.Triage:
+        """A page's place in the context. Provenance goes in `allowed_kinds`, not in `purpose`.
+
+        Stating "only official sources" inside the purpose asks the relevance question to
+        carry a requirement it does not answer; the source-kind Choice in the same decision
+        does, better calibrated and for free. Measured: `docs/results/2026-09-24-steerability`.
+        """
         state, qs = triage.questions(purpose=purpose, title=title, url=url, text=text)
         decision = await self.decide("triage", state, qs)
-        result = triage.decide(decision, self._t)
+        result = triage.decide(
+            decision, self._t, allowed_kinds=allowed_kinds, denied_kinds=denied_kinds
+        )
         self.record(
             decision,
             url=url,

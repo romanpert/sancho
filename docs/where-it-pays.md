@@ -215,10 +215,61 @@ implemented with a bench; "designed" means the arithmetic is here and the code i
 | **Tool selection, per turn, by rewriting `tools`** | Measured at 1.99x to 4.15x the cost of deciding once **[M]**. Decide once per session, or use the channels that append instead of swapping. |
 | **Tool selection at all, in a harness that has tool search** | Anthropic's tool search is server-side, cache-safe (schemas are appended, not swapped) and reports 85 % fewer definition tokens, 77k to 8.7k, with accuracy *up* **[P]**. Competing with it is a losing trade. |
 | **Deduplicating fetches by URL** | A dict does it. A published multi-agent run reports a 92.4 % per-case cache hit rate from a plain URL-keyed cache **[P]**. Keep the model for semantic redundancy, which a dict cannot see. |
+| **Reranking retrieved documents** | A dedicated reranker is better and cheaper, and it is steerable too. See the section below: this one is worth spelling out, because the opposite is being marketed. |
 | **Anything arithmetic, or any comparison of dates** | The model class reads numbers and dates as text, and its own card says so. Our memory collision point never asks which fact is newer; the harness's timestamps answer that in code. |
 | **Being the only barrier before an action** | The decider is itself vulnerable to instructions injected into its state. It adds denials; it never grants permission. |
 
 ---
+
+## 4b. Reranking: the pitch we were being handed, and why we are not taking it
+
+A vendor's post frames the top-100-to-top-5 step as a choice between a cross-encoder that
+"cannot be steered", an LLM reranker at "27x cost", and a decision model that is "steerable
+and cheap". It flatters us, so we checked it.
+
+**"Cross-encoders cannot be steered" is false in 2026.** Instruction-following is a shipped,
+priced feature: Voyage sells `rerank-2.5` and `rerank-2.5-lite` as instruction-following,
+with the instruction appended to the query in natural language, and their own worked example
+is our pitch nearly word for word ("retrieve regulatory documents and legal statutes, not
+court cases") **[P]**. ZeroEntropy's `zerank-2` takes instructions and business context.
+Contextual AI shipped one in March 2025 for recency, document type and source priority. Four
+benchmarks exist to measure the capability: MAIR, IFIR, FollowIR, InstructIR.
+
+**The price argument inverts.** Verified on vendor pages, 2026-09-24: Voyage
+`rerank-2.5-lite` at 0.02 USD/MTok and ZeroEntropy `zerank-2` at 0.025 are **below** our
+0.042, and a self-hosted Qwen3-Reranker is lower still **[P]**. The "27x" in the post
+compares an LLM reranker against a reranker, and then recommends the option that costs about
+twice the steerable cross-encoder.
+
+**Someone published our differentiation first, cheaper.** ZeroEntropy's "zerank-2 as a
+calibrated classifier" (2026-04-02) argues the score is an absolute probability, gives
+thresholds, and replaces top-K with a threshold: 85 % context compression at 90 % recall on
+150-page clinical documents **[P]**. That is the calibrated-gate story, owned by a reranker
+vendor at 60 % of our price.
+
+**And pointwise scoring is the known-worst architecture for ranking.** Aggregate quality runs
+pointwise LLM below cross-encoder below listwise, and N documents means N calls against one
+listwise pass at about 300 ms for a top-100 **[P]**.
+
+So: **we do not compete on reranking.** What survives is narrower and worth stating exactly.
+Our difference is not one calibrated score per document; it is **several independent typed
+questions about one state in a single pass** - is it an official source, does it state a
+figure, is it an opinion piece, is it in range - where a reranker takes one blended
+instruction or runs once per criterion. The open door in the literature is **exclusion**:
+models solve at most one ExcluIR query in eight and negation is where instruction-following
+degrades **[P]**.
+
+Our own first measurement of that, deliberately small: 14 flipped pairs where only the
+criterion changes, **11 of 14 both sides right**, with five exclusion criteria of which four
+passed **[M]** (`docs/results/2026-09-24-steerability/`). No baseline was run, so it says
+what we do and not what we do better. The three-arm experiment that would settle it is at the
+end of that file.
+
+One thing that measurement did change immediately: a provenance criterion written into the
+purpose prose failed while the answer sat unused in the same decision (`source_kind`:
+`news`, confidence 1.00). `triage.decide` now takes `allowed_kinds` / `denied_kinds` and
+filters in code. **A criterion that a Choice question already answers does not belong in
+free-text prose.**
 
 ## 5. Two ways to lose money with a layer that "fails open"
 

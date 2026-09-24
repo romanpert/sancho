@@ -1,0 +1,13 @@
+{
+ "pairs": 14,
+ "both_right": 11,
+ "answer_changed_with_the_criterion": 11,
+ "per_case": "25/28",
+ "cost_usd": 0.0011826360000000001,
+ "input_tokens": 28158,
+ "failed_pairs": [
+  "st-01",
+  "st-09",
+  "st-14"
+ ]
+}

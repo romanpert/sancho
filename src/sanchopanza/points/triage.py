@@ -8,7 +8,7 @@ coverage, a kept one costs tokens. Hence the asymmetry: in doubt, the page enter
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -72,16 +72,45 @@ class Triage:
     source_kind: str
 
 
-def decide(decision: Decision, t: Thresholds) -> Triage:
-    """Whether a page enters the context. In doubt it enters: cutting costs coverage."""
+def decide(
+    decision: Decision,
+    t: Thresholds,
+    *,
+    allowed_kinds: Iterable[str] | None = None,
+    denied_kinds: Iterable[str] | None = None,
+) -> Triage:
+    """Whether a page enters the context. In doubt it enters: cutting costs coverage.
+
+    `allowed_kinds` / `denied_kinds` filter on the source kind the decider already returned,
+    in code and at no extra cost. They exist because of a measured failure: on the
+    steerability bench the criterion "official primary sources, not press citing them" was
+    expressed only in the purpose, the relevance question answered 0.98 (the article *is*
+    about the topic), and the page was kept. The answer was in the same decision all along:
+    `source_kind` came back `news` at confidence 1.00, and the policy threw it away.
+
+    So a provenance requirement belongs here rather than in the purpose text. It is also the
+    better-calibrated route: Choice is the best-calibrated primitive in this model class
+    (ECE 0.035 against 0.14 for Truth, paper 5.8), and a set membership test in code cannot
+    drift. Unknown or low-confidence kinds keep the page, like every other doubt.
+    """
     if decision.failed:
         return Triage(True, "decider unavailable", 0.0, 0.0, 0.0, "other")
     inj = probability(decision.answer("injection"))
     relevance = decision.answer("relevant").truth
     evidence = probability(decision.answer("evidence"))
-    kind = decision.answer("source_kind").choice or "other"
+    answer_kind = decision.answer("source_kind")
+    kind = answer_kind.choice or "other"
     if inj > t.injection:
         return Triage(False, f"instruction injection ({inj:.2f})", 0.0, 0.0, inj, kind)
+    if (allowed_kinds or denied_kinds) and confident(answer_kind, t.act):
+        unwanted = (allowed_kinds is not None and kind not in set(allowed_kinds)) or (
+            denied_kinds is not None and kind in set(denied_kinds)
+        )
+        if unwanted:
+            reason = f"source kind {kind} ({answer_kind.confidence:.2f}) is not wanted here"
+            return Triage(
+                False, reason, probability(decision.answer("relevant")), evidence, inj, kind
+            )
     if relevance is None:
         return Triage(True, "no relevance data", 0.0, evidence, inj, kind)
     if relevance < t.relevance:
