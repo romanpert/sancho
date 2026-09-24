@@ -33,16 +33,45 @@ the workload's shape. This is the only economy where the arithmetic is safe.
 
 | Replacing | Price of the thing replaced | Ratio to 29 millionths a decision |
 |---|---|---|
+| **Claude Opus 5, the same 211 judgments, measured both ways** | **0.7884 against 0.0060 USD [M]** | **131x, and 10.9x faster, for 2 decisions of accuracy** |
 | Claude Opus 5, input only | 5.00 USD/MTok **[P]** | 119x **[D]** |
 | Claude Sonnet 5, input only | 2.00 USD/MTok **[P]** | 48x **[D]** |
 | Claude Haiku 4.5, tool-forced, same 156 cases | 0.2337 against 0.0048 USD **[M]** | **49x, and 3x faster** |
 | Bedrock Guardrails content filter, ~0.60 USD/MTok | 0.15 USD per 1k text units **[P]** | 14x **[D]** |
 | Azure AI evaluations meter / Vertex legacy model-based metrics | 20 USD/MTok in + 60 out **[P]** | **~1,450x per 1,000 judgments** **[D]** |
 
-That last row is not a typo and it is the most under-appreciated number in this document.
-At 1,500 input and 200 output tokens per judgment, a hosted evaluation meter bills about
-42 USD per thousand judgments; the same thousand judgments here cost 0.029 USD. The judge
-model is not where the money goes. The meter is.
+**The first row is the one to quote, and it is new on 2026-09-24.** Every other row compares
+a measured price against a published one. That row is the same 211 judgments answered twice,
+independently: once by the evaluator and once by a frontier generative model given the same
+questions, the same criteria and the same state, neither of them having seen the labels. It
+came out of building the second annotator for the bench, so the generative arm was not
+constructed to lose.
+
+| | Evaluator, shipped policy | Evaluator, plain 0.5 cut | Claude Opus 5 |
+|---|---|---|---|
+| Agreement with the labels | 190/211 = 90 % | 202/211 = 96 % | 204/211 = 97 % |
+| Cost per judgment | 28.4 millionths | same | 3,719 millionths |
+| Median latency | 250 ms | same | 2,731 ms |
+
+**It is not a tie, and saying so is the point.** The frontier model is the better judge. But
+two of the fourteen decisions between them are the model and twelve are our own thresholds,
+so the honest claim is: *a small amount of accuracy, bought back at 131x the price and 10.9x
+the latency.* Whether that trade is worth taking is a property of the decision, not of the
+models - clearly yes for a gate in front of a generative pass, clearly no for a judgment that
+is itself the deliverable. Reproduce with `benchmarks/substitution.py`; full account in
+`docs/results/2026-09-24-fifty/substitution.md`.
+
+Two things push that ratio *towards* the generative model rather than away: it was run at
+`low` effort answering in a single word, about the cheapest a frontier model can be asked to
+do this; and neither side caches, because a per-decision prompt of a few hundred tokens is
+below the minimum cacheable prefix. That second fact is worth keeping: the prompt cache, which
+dominates the economics of a long agent conversation, does nothing at all at the granularity
+of one decision.
+
+The Azure row is not a typo either, and it is the most under-appreciated number in this
+document. At 1,500 input and 200 output tokens per judgment, a hosted evaluation meter bills
+about 42 USD per thousand judgments; the same thousand judgments here cost 0.029 USD. The
+judge model is not where the money goes. The meter is.
 
 ### Avoidance: the decision keeps tokens out of the big model
 

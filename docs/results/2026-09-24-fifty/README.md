@@ -1,5 +1,12 @@
 # Fifty cases per binary point, a second annotator, and what a precision target costs
 
+> **The headline is in `substitution.md`, and it was a by-product.** Building the second
+> annotator meant asking a frontier generative model the same 211 judgments the evaluator
+> answers, from the same question builders, blind to the labels. That is the cleanest
+> substitution measurement in the repository: **96 % against 97 % agreement, two decisions
+> apart, at 131x less cost per judgment and 10.9x lower latency.** Everything below is how
+> the bench that made it possible was built, and what it says about thresholds.
+
 Run of 2026-09-24. 212 new cases, `jev-1.13.0`, **0.0060 USD**, 28.3 millionths per decision -
 the same per-decision figure as the public run and the 124-case run, now on a third
 distribution.
@@ -16,8 +23,9 @@ move, and now there is a number saying why.**
 | New cases | 212, in `benches/{loop,memory,graph-build,retrieval}-b.jsonl` |
 | Points taken to 50 | `goal_met`, `repeats_check`, `memory_write`, `recall`, `extract_gate`, `redundant_page` |
 | Recording | `fixtures/new-points-50.jsonl`, replays for free |
-| Cost of the evaluator | 0.0060 USD for 212 decisions |
-| Cost of the second annotator | see below; it is three orders of magnitude more |
+| Cost of the evaluator | 0.0060 USD for 212 decisions, 28.4 millionths each |
+| Cost of the second annotator | 0.7884 USD for the same 212 judgments, 3,719 millionths each |
+| Ratio | **131x**, at 10.9x the latency and two decisions of accuracy |
 
 The original 124-case bench is untouched in its own files and its own fixture, so the run
 published in paper Section 5.10 stays reproducible exactly as it was.
@@ -202,7 +210,50 @@ and for the author who wrote it in the model's idiom, and a case whose wording s
 A kappa of 0.96 between an author and a model given that author's own criteria is a weaker
 fact than a kappa of 0.96 between two people. Where the paper uses these numbers it says so.
 
-## 5. What this does not settle
+## 5. The second annotator is stable, and the one label that moved was already disputed
+
+Re-running the annotator over the same 212 cases with the same prompts, as a second sample:
+**210 of 211 labels identical, 99.5 %**. Exactly one moved, `gm-50`, from `false` to `true`.
+
+`gm-50` is the case Section 4 had already recorded as disputed, because it was one of the
+seven the two annotators labelled differently and it turns on whether a *multa* and an
+*indemnizacion* are the same thing. Two independent signals - a disagreement between
+annotators, and instability across samples of one annotator - landed on the same case without
+being pointed at it. That is the best evidence available here that the disputed list is
+picking out genuine ambiguity rather than noise, and it is why `benchmarks/annotate.py`
+refuses to overwrite an existing label file and prints a stability report instead.
+
+`docs/results/2026-09-24-fifty/annotator-2-rerun.jsonl` holds the second sample;
+`annotator-stability.md` holds the comparison. The published numbers all come from the first
+run, which was recorded before the second existed.
+
+## 5b. The cost was unmeasured, and that is now impossible
+
+The first run of this annotator produced 212 labels and **no measured cost at all**. The
+estimate was stated out loud before launching and never checked afterwards, and the estimate
+was wrong: it assumed the system prompt would be cached, and it is about 60 tokens against a
+minimum cacheable prefix of 512 to 4096, so nothing cached and the run read zero from cache
+on every one of 212 calls.
+
+Three things changed so that this cannot recur.
+
+- **`benchmarks/meter.py`** is now the one place that knows list prices and the cache
+  arithmetic. It was copied in `benchmarks/ab/run.py` and `benchmarks/cache/run.py` and
+  absent from the annotator, which is precisely why the annotator went unmeasured: there was
+  nothing to reach for. Both benches now use it; a property check over 2,000 random usages
+  and four models confirms the refactor changes no published figure by so much as a float
+  rounding. It refuses to price a model it does not know rather than defaulting, and its
+  `summary()` always prints the cache line, shouting when `cache_read_input_tokens` is zero.
+- **`benchmarks/annotate.py`** is the annotator, in the repository rather than in someone's
+  scratchpad, metered, writing `annotator-usage.json` and a per-call ledger beside the labels.
+- **The authoritative number still needs an Admin API key.** `Meter.cost()` is exact
+  arithmetic over reported tokens at list prices; it is not a bill. The organization's Usage
+  and Cost report is, and a normal `sk-ant-api...` key is refused by it with a 401 and the
+  message *"The Admin API requires an Admin API key or an organization-scoped API key"* -
+  verified, not assumed. Creating one in the console makes the billed figure readable, and
+  the report is historical, so it would also recover what the first, unmetered run cost.
+
+## 6. What this does not settle
 
 - `memory_collision` and `edge` are not extended. They have four and three labels, an
   abstention band, and in `memory_collision` a `duplicate` branch that has never fired.

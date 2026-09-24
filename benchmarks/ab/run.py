@@ -52,19 +52,16 @@ RAIZ = Path(__file__).resolve().parents[2]
 if str(RAIZ / "src") not in sys.path:
     sys.path.insert(0, str(RAIZ / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(RAIZ / "benchmarks"))
 
 import anthropic  # noqa: E402
 from corpus import Document, build, search  # noqa: E402
+from meter import PRICES, Usage  # noqa: E402
 
 from sanchopanza import JsonlJournal, Squire, Thresholds  # noqa: E402
 from sanchopanza.providers import create  # noqa: E402
 
-# Precios de lista de la API de Anthropic, $/Mtok (entrada, salida), a 2026-06-24.
-PRECIOS = {
-    "claude-opus-5": (5.00, 25.00),
-    "claude-sonnet-5": (2.00, 10.00),
-    "claude-haiku-4-5": (1.00, 5.00),
-}
+# Los precios y la aritmetica de cache viven en `benchmarks/meter.py`, en un solo sitio.
 MODELO_POR_DEFECTO = "claude-sonnet-5"
 # Tamano de documento: cuantos caracteres minimos tiene una seccion antes de fundirse con la
 # anterior. `small` deja documentos de pagina; `large`, documentos de PDF oficial.
@@ -192,15 +189,10 @@ def acierta(respuesta: str, esperado: list[str]) -> bool:
 
 
 def coste(modelo: str, uso: Any) -> float:
-    entrada, salida = PRECIOS.get(modelo, PRECIOS[MODELO_POR_DEFECTO])
-    lectura = getattr(uso, "cache_read_input_tokens", 0) or 0
-    escritura = getattr(uso, "cache_creation_input_tokens", 0) or 0
-    return (
-        uso.input_tokens * entrada
-        + lectura * entrada * 0.1
-        + escritura * entrada * 1.25
-        + uso.output_tokens * salida
-    ) / 1_000_000
+    """Coste de una respuesta. La aritmetica esta en `meter.Usage`, probada aparte."""
+    acumulado = Usage()
+    acumulado.add(uso)
+    return acumulado.cost(modelo if modelo in PRICES else MODELO_POR_DEFECTO)
 
 
 DIGESTO_POR_DOC = 220

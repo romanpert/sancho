@@ -57,19 +57,15 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parents[2]
 if str(RAIZ / "src") not in sys.path:
     sys.path.insert(0, str(RAIZ / "src"))
+sys.path.insert(0, str(RAIZ / "benchmarks"))
 
 import anthropic  # noqa: E402
+from meter import CACHE_READ, CACHE_WRITE, PRICES, Usage  # noqa: E402
 
-# Precios de lista de la API de Anthropic, $/Mtok, a 2026-06-24. Lectura de cache 0,1x de la
-# entrada base; escritura de 5 min 1,25x; de 1 h 2x.
-PRECIOS = {
-    "claude-sonnet-5": (2.00, 10.00),
-    "claude-opus-5": (5.00, 25.00),
-    "claude-haiku-4-5": (1.00, 5.00),
-}
+# Los precios y la aritmetica de cache viven en `benchmarks/meter.py`, en un solo sitio.
 MODELO = "claude-sonnet-5"
-LECTURA_CACHE = 0.10
-ESCRITURA_CACHE = 1.25
+LECTURA_CACHE = CACHE_READ
+ESCRITURA_CACHE = CACHE_WRITE["5m"]
 
 # Un catalogo sintetico con la forma de uno real: grupos de herramientas de varios dominios,
 # con esquemas del tamano que tienen los de un servidor MCP de verdad. Sintetico a proposito:
@@ -182,13 +178,14 @@ class Brazo:
 
     @property
     def coste(self) -> float:
-        entrada, salida = PRECIOS[MODELO]
-        return (
-            self.entrada_sin_cache * entrada
-            + self.lectura_cache * entrada * LECTURA_CACHE
-            + self.escritura_cache * entrada * ESCRITURA_CACHE
-            + self.salida * salida
-        ) / 1_000_000
+        """La aritmetica esta en `meter.Usage`, en un solo sitio y probada aparte."""
+        return Usage(
+            calls=1,
+            input=self.entrada_sin_cache,
+            output=self.salida,
+            cache_read=self.lectura_cache,
+            cache_write=self.escritura_cache,
+        ).cost(MODELO)
 
 
 def ejecutar(cliente, nombre: str, turnos: int, modo: str) -> Brazo:
@@ -245,7 +242,7 @@ def tokens_aproximados(tools: list[dict]) -> int:
 def seco(turnos: int) -> None:
     completo, estrecho = catalogo(), catalogo(SELECCION)
     tc, te = tokens_aproximados(completo), tokens_aproximados(estrecho)
-    entrada = PRECIOS[MODELO][0]
+    entrada = PRICES[MODELO][0]
     print(f"catalogo completo: {len(completo)} herramientas, ~{tc} tokens")
     print(f"catalogo estrecho: {len(estrecho)} herramientas, ~{te} tokens")
     print(f"\nprevision para {turnos} turnos a precios de {MODELO} (solo los esquemas):")
