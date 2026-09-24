@@ -130,10 +130,21 @@ Full method, intervals and caveats: [the paper](docs/paper.md). Benches and how 
 | | |
 |---|---|
 | One decision | **29 millionths of a dollar**, output included, because this model's output is free |
+| **Measured against Claude Opus 5, the same 211 judgments, both arms metered** | **131x cheaper, 10.9x faster, two decisions less accurate** |
 | The same tokens on Claude Sonnet 5, input only | **48x** more |
 | The same tokens as a Sonnet 5 **cache read** (0.1x input) | **4.8x** more, and this is the honest comparison inside a warm loop |
 | Measured against Claude Haiku 4.5, tool-forced, same cases | **49x cheaper, 3x faster**, comparable accuracy |
 | Against a hosted evaluation meter (Azure, Vertex legacy), per 1,000 judgments | 0.029 USD against about 42 USD: **~1,450x** |
+
+The second row is the one to read, because both sides of it are measured rather than quoted
+from a tariff. Building a second annotator for our own bench meant asking a frontier model
+the same 211 judgments, from the same question builders, blind to the labels. It agreed with
+the labels **204/211**; we agreed **202/211** at a plain 0.5 cut and **190/211** under the
+thresholds we ship. So the frontier model is the better judge, by two decisions once our own
+thresholds are taken out of it — and it costs 131 times more per judgment and answers eleven
+times slower. That is the trade, stated in the direction that does not flatter us:
+[docs/results/2026-09-24-fifty/substitution.md](docs/results/2026-09-24-fifty/substitution.md),
+reproduce with `python benchmarks/substitution.py`.
 
 **There is no headline saving percentage on this page, and that is deliberate.** We ran the
 end-to-end A/B ([benchmarks/ab](benchmarks/ab)) instead of guessing. Across 64 paired runs,
