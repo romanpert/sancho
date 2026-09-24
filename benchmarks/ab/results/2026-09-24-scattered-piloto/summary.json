@@ -1,0 +1,126 @@
+{
+ "arms": {
+  "bare": {
+   "runs": 2,
+   "correct": 2,
+   "answered": 2,
+   "input_tokens_mean": 33546,
+   "output_tokens_mean": 1190,
+   "model_cost_mean": 0.078991,
+   "squire_cost_mean": 0.0,
+   "total_cost_mean": 0.078991,
+   "wall_s_mean": 16.1,
+   "fetches_mean": 6,
+   "dropped_mean": 0,
+   "dropped_redundant_mean": 0,
+   "turns_mean": 6
+  },
+  "squire": {
+   "runs": 2,
+   "correct": 2,
+   "answered": 2,
+   "input_tokens_mean": 15980,
+   "output_tokens_mean": 918,
+   "model_cost_mean": 0.041144,
+   "squire_cost_mean": 0.000121,
+   "total_cost_mean": 0.041265,
+   "wall_s_mean": 13.1,
+   "fetches_mean": 4,
+   "dropped_mean": 0,
+   "dropped_redundant_mean": 0,
+   "turns_mean": 4
+  }
+ },
+ "delta": {
+  "input_tokens_pct": -52.4,
+  "total_cost_pct": -47.8,
+  "model_cost_pct": -47.9,
+  "wall_s_pct": -18.6,
+  "correct_bare": "2/2",
+  "correct_squire": "2/2"
+ },
+ "by_task": {
+  "spread-adapters": {
+   "bare": {
+    "runs": 1,
+    "correct": 1,
+    "answered": 1,
+    "input_tokens_mean": 10373,
+    "output_tokens_mean": 962,
+    "model_cost_mean": 0.030366,
+    "squire_cost_mean": 0.0,
+    "total_cost_mean": 0.030366,
+    "wall_s_mean": 8.9,
+    "fetches_mean": 4,
+    "dropped_mean": 0,
+    "dropped_redundant_mean": 0,
+    "turns_mean": 3
+   },
+   "squire": {
+    "runs": 1,
+    "correct": 1,
+    "answered": 1,
+    "input_tokens_mean": 10373,
+    "output_tokens_mean": 922,
+    "model_cost_mean": 0.029966,
+    "squire_cost_mean": 0.000107,
+    "total_cost_mean": 0.030073,
+    "wall_s_mean": 9.4,
+    "fetches_mean": 4,
+    "dropped_mean": 0,
+    "dropped_redundant_mean": 0,
+    "turns_mean": 3
+   }
+  },
+  "spread-costs": {
+   "bare": {
+    "runs": 1,
+    "correct": 1,
+    "answered": 1,
+    "input_tokens_mean": 56718,
+    "output_tokens_mean": 1418,
+    "model_cost_mean": 0.127616,
+    "squire_cost_mean": 0.0,
+    "total_cost_mean": 0.127616,
+    "wall_s_mean": 23.2,
+    "fetches_mean": 8,
+    "dropped_mean": 0,
+    "dropped_redundant_mean": 0,
+    "turns_mean": 9
+   },
+   "squire": {
+    "runs": 1,
+    "correct": 1,
+    "answered": 1,
+    "input_tokens_mean": 21586,
+    "output_tokens_mean": 915,
+    "model_cost_mean": 0.052322,
+    "squire_cost_mean": 0.000135,
+    "total_cost_mean": 0.052457,
+    "wall_s_mean": 16.9,
+    "fetches_mean": 4,
+    "dropped_mean": 0,
+    "dropped_redundant_mean": 0,
+    "turns_mean": 5
+   }
+  }
+ },
+ "paired": {
+  "pairs": 2,
+  "input_tokens": [
+   -0.523646986928202,
+   -0.6194153531506752,
+   0.0
+  ],
+  "total_cost": [
+   -0.4775960299274602,
+   -0.588946950225677,
+   -0.009633208193374099
+  ],
+  "wall_s": [
+   -0.18187480535658673,
+   -0.27268817204301077,
+   0.05643340857787815
+  ]
+ }
+}

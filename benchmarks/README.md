@@ -97,6 +97,56 @@ The prediction, recorded before the run so that it can be wrong: a real effect o
 tokens, a smaller one on total cost, latency still worse, and quality unchanged. Estimated
 spend for three repetitions of both tasks in both arms, at Sonnet 5 prices: 5 to 10 USD.
 
+### The pilot ran, and the prediction is still untested
+
+One repetition of both tasks in both arms, `--retrieval scattered --lever redundancy`,
+claude-sonnet-5, 0.2405 USD, on 2026-09-24. Results in
+`ab/results/2026-09-24-scattered-piloto/`.
+
+**The headline it produced is an artifact, and this is the interesting part.** The summary
+reported total cost **-47.8 %** with a 95 % paired-bootstrap interval of [-58.9 %, -1.0 %]
+that excludes zero, and input tokens -52.4 %. None of it is attributable to the squire.
+
+The redundancy point was wired correctly and did run: six real calls to `jev-1.13.0`,
+0.000242 USD in total, journalled in `journal.jsonl`. All six answered `adds_nothing` at
+0.03, 0.04, 0.04, 0.05, 0.03 and 0.16 - confidently "this page does add something" - so the
+point **dropped nothing**, and on the documents it was shown that was the right answer:
+each one carried a pin the agent still needed. (Those six answers also re-confirm the
+`confidence == |2p - 1|` identity exactly, on observations that post-date the canary test.)
+
+With zero drops, `_texto_de_pagina` returns `doc.text` unchanged, so the squire arm handed
+the model the same bytes as the bare arm. The two arms were the same experiment run twice.
+`spread-adapters` shows what that looks like when the sampling happens to agree: both arms
+fetched the identical four documents in three turns for 10,373 input tokens each, an effect
+of exactly zero. The whole "saving" is `spread-costs`, where the bare arm wandered through
+eight documents in nine turns (56,718 tokens) and the squire arm took four in five (21,586).
+That is the agent's search path, not the lever.
+
+So the prediction is neither confirmed nor refuted. What the pilot did buy, for a quarter of
+a dollar:
+
+1. **A structural problem with the design, not just with the sample size.** An avoidance
+   lever can only act on documents the agent actually fetches, and the run that fetches many
+   redundant documents is the run that was already going badly. The lever's opportunity is
+   correlated with the arm having a bad draw, so pairing on (task, repetition) does not
+   isolate it: when the paths diverge, the comparison is no longer about the lever. The fix
+   is to take the agent's discretion out of the fetch sequence - drive both arms through the
+   same fixed list of documents - so the only difference left is what the squire removes.
+   Spending the remaining 5-10 USD on more repetitions of the current design would buy more
+   of this variance, not less of it.
+2. **Two reporting defects, now fixed.** `dropped_mean` and the per-run progress line counted
+   only `dropped` (the triage list), so a `--lever redundancy` run printed `drop 0` whether
+   the point dropped everything or nothing - the one number that would have exposed the
+   artifact was hardcoded to the other lever. The summary also titled itself "page triage"
+   and said "It measures one lever, page triage" on a run that measured redundancy. Both
+   counters are now reported separately, the prose follows `--lever`, and when both are zero
+   the summary says in full that the comparison is uninformative and why.
+
+The generalisable lesson is the cache benchmark's, in a second costume: **when a result
+favours you, first find the thing that was supposed to contradict it and check that it was
+capable of firing.** There it was a shared cache; here it was a drop counter wired to the
+wrong list.
+
 The second is a bug this benchmark caught in the library itself. Triage judged a
 10,000-character document on its first 1,500 characters, decided the preamble did not address
 the purpose, and dropped the one document holding the answer. The agent re-fetched it, got it

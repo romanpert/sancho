@@ -141,6 +141,28 @@ needs many fetches, most of them useless. Ours had neither.
 difficulty are coupled: bigger documents means fewer of them, each holding more, so the first
 one opened usually had the answer **[M]**.
 
+**The fetch-heavy pilot produced a 48 % saving that was not there.** One repetition of both
+multi-source tasks in both arms, scattered retrieval, the redundancy point on: the summary
+reported total cost -47.8 % with a paired interval of [-58.9 %, -1.0 %] excluding zero
+**[M]**. The point had dropped **nothing**. Its six calls all answered `adds_nothing` at 0.03
+to 0.16, correctly, because every document it was shown carried a pin the agent still needed;
+and with zero drops the squire arm hands the model the same bytes as the bare arm, so the two
+arms were one experiment run twice. One task confirms it directly - identical fetches,
+identical 10,373 input tokens, an effect of exactly zero - and the entire "saving" is the
+other task, where the bare arm happened to wander through eight documents and nine turns
+against four and five. The number measured the agent's search-path variance **[M]**.
+
+Two things follow. The first is that **the counter that should have caught it was wired to
+the wrong list**: the summary's drop row and the progress line both read the triage list, so
+a redundancy run printed `drop 0` whether the point dropped everything or nothing. Both
+counters are now reported, and a run in which the lever drops nothing now says in the summary
+that it is uninformative and why. The second is a design flaw rather than a sample-size
+problem: **an avoidance lever can only act on what the agent fetches, and the run that
+fetches many redundant sources is the run that was already going badly.** The lever's
+opportunity is correlated with the arm having a bad draw, so pairing on (task, repetition)
+does not isolate it. Settling this needs the fetch sequence taken out of the agent's hands,
+not more repetitions of the same design.
+
 **The A/B still paid for itself, by finding a bug no decision-level bench could.** Triage was
 judging a 10,000-character document on its first 1,500 characters, dropping the one page that
 held the answer; the agent re-fetched it, hit its turn cap and returned nothing at twice the
@@ -215,7 +237,7 @@ implemented with a bench; "designed" means the arithmetic is here and the code i
 | Lever | Why it is here and not in tier 1 |
 |---|---|
 | **Page triage** | Measured accurate (14/16) and measured *null* end to end on our workload **[M]**. Break-even is 60 tokens a page on a Sonnet-class orchestrator **[D]**, which every real page clears; whether the tokens would have changed the deliverable is the part we could not show. |
-| **Redundancy between sources** | The lever our A/B could not exercise at 1.8 fetches per task. AUC 1.00, 15/16 at a 0.5 cut, 11/16 under shipped thresholds **[M]**. The experiment that would settle it is in section 6. |
+| **Redundancy between sources** | The lever our A/B could not exercise at 1.8 fetches per task. AUC 1.00, 15/16 at a 0.5 cut, 11/16 under shipped thresholds **[M]**. The fetch-heavy pilot of 2026-09-24 still did not exercise it: six calls, zero drops, all six correct on the documents they saw **[M]**. The experiment that would settle it is in section 6. |
 | **Search tier routing** | 17/18 **[M]**, and the saving is whatever your search provider charges, which we cannot measure for you. **Read the warning in section 5 before wiring it.** |
 
 ### Tier 4 - do not use a decision model for this
@@ -308,11 +330,16 @@ to separate. Measure the thing you are filtering before you build the filter.
 
 Each of these is specified enough that a disagreement becomes a measurement.
 
-1. **The fetch-heavy A/B.** A task that gathers 20-40 sources before writing, over a corpus
-   where most of what retrieval returns is genuinely off-target, with the redundancy point on
-   and off. This is the one that would license or kill a headline saving figure for avoidance.
-   Prediction, stated in advance: a real effect on input tokens, a smaller one on cost, and
-   latency still worse. Estimated spend at Sonnet 5 prices: 5-10 USD.
+1. **The fetch-heavy A/B, with the fetch sequence held fixed.** A task that gathers 20-40
+   sources before writing, over a corpus where most of what retrieval returns is genuinely
+   off-target, with the redundancy point on and off. This is the one that would license or
+   kill a headline saving figure for avoidance. Prediction, stated in advance: a real effect
+   on input tokens, a smaller one on cost, and latency still worse. Estimated spend at
+   Sonnet 5 prices: 5-10 USD. **The pilot of 2026-09-24 has been run and does not settle it**
+   (section 3): letting each arm choose its own fetches makes the lever's opportunity
+   depend on the arm's draw, and the comparison stops being about the lever. Both arms must
+   be driven through the same fixed document sequence, so that the only remaining difference
+   is what the squire removes from it.
 2. **Fifty cases and a second annotator per new point**, then thresholds set the way Google
    sets them: per point, to a target precision, reported as recall@X. Prediction: the
    86/88-against-78/88 gap closes to within two decisions without any loss in the safe

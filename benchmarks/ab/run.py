@@ -444,6 +444,9 @@ def resumir(filas: list[Ejecucion]) -> dict[str, Any]:
             "wall_s_mean": round(statistics.mean(f.wall_s for f in sub), 1),
             "fetches_mean": round(statistics.mean(len(f.fetched) for f in sub), 2),
             "dropped_mean": round(statistics.mean(len(f.dropped) for f in sub), 2),
+            "dropped_redundant_mean": round(
+                statistics.mean(len(f.dropped_redundant) for f in sub), 2
+            ),
             "turns_mean": round(statistics.mean(f.turns for f in sub), 2),
         }
 
@@ -482,11 +485,17 @@ def render(
     filas: list[Ejecucion],
     retrieval: str,
     doc_size: str,
+    lever: str = "triage",
 ) -> str:
     b, s, d = resumen["arms"]["bare"], resumen["arms"]["squire"], resumen["delta"]
     total = sum(f.total_cost_usd for f in filas)
+    nombre_palanca = {
+        "triage": "page triage",
+        "redundancy": "source redundancy",
+        "both": "page triage and source redundancy",
+    }[lever]
     lineas = [
-        f"# End-to-end A/B: page triage on and off ({modelo}, {retrieval} retrieval, "
+        f"# End-to-end A/B: {nombre_palanca} on and off ({modelo}, {retrieval} retrieval, "
         f"{doc_size} documents)",
         "",
         "Same agent, same tasks, same prompts, same tools, same thinking and effort. The only",
@@ -514,6 +523,7 @@ def render(
         f"| {d['wall_s_pct']:+.1f} % |",
         f"| Documents fetched, mean | {b['fetches_mean']} | {s['fetches_mean']} | |",
         f"| Of those, dropped by triage | 0 | {s['dropped_mean']} | |",
+        f"| Of those, dropped as redundant | 0 | {s['dropped_redundant_mean']} | |",
         f"| Turns, mean | {b['turns_mean']} | {s['turns_mean']} | |",
         "",
         "## Paired comparison",
@@ -552,8 +562,8 @@ def render(
         "",
         "## What this does and does not say",
         "",
-        "It measures one lever, page triage, on one corpus, with one retriever and one model.",
-        "It does not measure model routing, search routing, the citation check or the shell",
+        f"It measures one lever, {nombre_palanca}, on one corpus, with one retriever and one",
+        "model. It does not measure model routing, search routing, the citation check or the shell",
         "guard, none of which are exercised here. The corpus documents average a few hundred to",
         "a couple of thousand tokens; the effect scales with document size, and the arithmetic",
         "for other sizes is in `docs/savings.md`.",
@@ -562,6 +572,15 @@ def render(
         "one document of the corpus, verified by `--verify`. That catches an answer that lost the",
         "fact; it does not catch an answer that is worse in ways a reader would notice.",
     ]
+    if s and not s["dropped_mean"] and not s["dropped_redundant_mean"]:
+        lineas += [
+            "",
+            "**The lever dropped nothing in any run, so this comparison is uninformative about",
+            "it.** When no page is dropped the squire arm hands the model exactly the bytes the",
+            "bare arm hands it, so the two arms are the same experiment run twice and every",
+            "difference above is the agent's run-to-run variance in its search path. Read the",
+            "numbers as a measurement of that variance, not of the lever.",
+        ]
     return "\n".join(lineas) + "\n"
 
 
@@ -616,7 +635,8 @@ async def principal(args: argparse.Namespace) -> int:
                 print(
                     f"{estado}{tarea['id']:12} {arm:7} r{repeticion} "
                     f"{fila.input_tokens:>7,} tok  {fila.total_cost_usd:.5f} $  "
-                    f"{fila.wall_s:>5.1f} s  fetch {len(fila.fetched)} drop {len(fila.dropped)}"
+                    f"{fila.wall_s:>5.1f} s  fetch {len(fila.fetched)} "
+                    f"drop {len(fila.dropped)}+{len(fila.dropped_redundant)}"
                     + (f"  ERROR {fila.error}" if fila.error else "")
                 )
                 if gastado > args.max_usd:
@@ -637,6 +657,7 @@ async def principal(args: argparse.Namespace) -> int:
         filas=filas,
         retrieval=args.retrieval,
         doc_size=args.doc_size,
+        lever=args.lever,
     )
     print("\n" + texto)
     salida = Path(args.out)
